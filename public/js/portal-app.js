@@ -21,9 +21,9 @@ import {
 } from "./user-service.js?v=2.3";
 import {
   RAZORPAY_CONFIG,
-  createRazorpayOrder,
-  verifyRazorpayPayment,
-} from "./razorpay-config.js?v=2.3";
+  createOrderOrFallback,
+  verifyPaymentOrSkip,
+} from "./razorpay-config.js?v=2.4";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
