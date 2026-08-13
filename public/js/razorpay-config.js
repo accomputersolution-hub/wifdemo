@@ -8,7 +8,7 @@
  */
 
 /** Public Test Key ID only (never the Key Secret). */
-export const RAZORPAY_KEY_ID = "rzp_test_TPM1bEMUthy8In";
+export const RAZORPAY_KEY_ID = "rzp_test_TPMuvhl2PkGtjZ";
 
 /** Theme / merchant display for Razorpay Checkout modal */
 export const RAZORPAY_CONFIG = {
