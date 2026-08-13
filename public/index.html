@@ -1718,6 +1718,28 @@
       text-align: center;
     }
 
+    .demo-toggle {
+      margin-top: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px dashed rgba(201, 162, 39, 0.4);
+      background: rgba(201, 162, 39, 0.08);
+      color: var(--gold-pale);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .demo-toggle input {
+      margin-top: 2px;
+      accent-color: var(--gold);
+      flex-shrink: 0;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -1791,6 +1813,10 @@
             </div>
           </form>
           <p class="auth-note">Demo portal · Firebase Auth + Firestore · Hosted via Firebase Hosting</p>
+          <label class="demo-toggle" for="demo-force-dashboard">
+            <input type="checkbox" id="demo-force-dashboard" checked />
+            <span>Demo mode: always open Active Dashboard after login</span>
+          </label>
         </div>
 
         <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
