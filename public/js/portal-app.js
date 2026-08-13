@@ -14,6 +14,8 @@ import {
   saveSelectedPlan,
   markTransactionPending,
   activatePlan,
+  setConnectionStatus,
+  ensureActivePlanDetails,
   friendlyFirestoreError,
 } from "./user-service.js";
 
@@ -25,6 +27,8 @@ const btnConfirmPay = document.getElementById("btn-confirm-pay");
 const btnGatewayBack = document.getElementById("btn-gateway-back");
 const btnRestart = document.getElementById("btn-restart");
 const btnConnect = document.getElementById("btn-connect");
+const btnDashToggle = document.getElementById("btn-dash-toggle");
+const btnDashLogout = document.getElementById("btn-dash-logout");
 
 const screens = {
   auth: document.getElementById("screen-auth"),
@@ -32,6 +36,7 @@ const screens = {
   gateway: document.getElementById("screen-gateway"),
   processing: document.getElementById("screen-processing"),
   success: document.getElementById("screen-success"),
+  dashboard: document.getElementById("screen-dashboard"),
 };
 
 const steps = [
@@ -95,6 +100,73 @@ function formatFileSize(bytes) {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function macFromUid(uid) {
+  const source = String(uid || "device");
+  let hash = 2166136261;
+  for (let i = 0; i < source.length; i++) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const bytes = [];
+  for (let i = 0; i < 6; i++) {
+    bytes.push((hash >>> (i * 5)) & 0xff);
+  }
+  bytes[0] = (bytes[0] & 0xfe) | 0x02;
+  return bytes.map((b) => b.toString(16).padStart(2, "0").toUpperCase()).join(":");
+}
+
+function detectDeviceLabel() {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "Apple iOS device";
+  if (/Android/i.test(ua)) return "Android device";
+  if (/Windows/i.test(ua)) return "Windows device";
+  if (/Mac OS X|Macintosh/i.test(ua)) return "Mac device";
+  if (/Linux/i.test(ua)) return "Linux device";
+  return "This browser device";
+}
+
+function validUntilDate(months) {
+  const d = new Date();
+  d.setDate(d.getDate() + months * 30);
+  return d;
+}
+
+function formatValidUntil(date) {
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function hasActiveSubscription(doc) {
+  if (!doc || !doc.activePlan) return false;
+  const plan = doc.activePlan;
+  if (!(plan.id || plan.name)) return false;
+
+  if (plan.validUntilIso) {
+    const expiry = new Date(plan.validUntilIso);
+    if (!Number.isNaN(expiry.getTime()) && expiry < new Date()) {
+      return false;
+    }
+  }
+
+  const status = doc.transactionStatus;
+  if (status && status !== "active" && status !== "paid") {
+    // Still treat as active if an activePlan payload exists from a prior checkout.
+    return Boolean(plan.wifiUsername || plan.name);
+  }
+  return true;
+}
+
+function getConnectionStatus() {
+  if (userDoc && userDoc.connectionStatus) return userDoc.connectionStatus;
+  if (userDoc && userDoc.activePlan && userDoc.activePlan.connectionStatus) {
+    return userDoc.activePlan.connectionStatus;
+  }
+  return "connected";
 }
 
 function showDocError(message) {
@@ -234,21 +306,117 @@ function updateAccountBar() {
 
   const active = userDoc && userDoc.activePlan;
   const status = (userDoc && userDoc.transactionStatus) || "none";
+  const connected = getConnectionStatus() === "connected";
 
-  if (active && active.name) {
+  if (hasActiveSubscription(userDoc)) {
     accountPlan.textContent =
-      active.name +
+      (active.name || "Active plan") +
       (active.durationLabel ? " · " + active.durationLabel : "") +
-      " · Active";
+      (connected ? " · Online" : " · Offline");
+    accountStatus.textContent = "Active subscriber";
   } else if (userDoc && userDoc.selectedPlan && userDoc.selectedPlan.name) {
     accountPlan.textContent =
       userDoc.selectedPlan.name + " · " + (status === "pending" ? "Payment pending" : "Selected");
+    accountStatus.textContent = "Logged in";
   } else {
     accountPlan.textContent = "No active plan yet";
+    accountStatus.textContent = "Logged in";
   }
 
-  accountStatus.textContent = status === "active" ? "Logged in" : "Logged in";
-  accountStatus.dataset.status = status;
+  accountStatus.dataset.status = hasActiveSubscription(userDoc) ? "active" : status;
+}
+
+async function hydrateActivePlanDetails() {
+  if (!currentUser || !userDoc || !userDoc.activePlan) return userDoc;
+
+  const plan = { ...userDoc.activePlan };
+  let changed = false;
+
+  if (!plan.wifiUsername || !plan.wifiPassword) {
+    const creds = randomCreds();
+    plan.wifiUsername = plan.wifiUsername || creds.user;
+    plan.wifiPassword = plan.wifiPassword || creds.pass;
+    changed = true;
+  }
+
+  if (!plan.macAddress) {
+    plan.macAddress = macFromUid(currentUser.uid);
+    changed = true;
+  }
+
+  if (!plan.deviceLabel) {
+    plan.deviceLabel = detectDeviceLabel();
+    changed = true;
+  }
+
+  if (!plan.connectionStatus) {
+    plan.connectionStatus = userDoc.connectionStatus || "connected";
+    changed = true;
+  }
+
+  if (changed) {
+    try {
+      await ensureActivePlanDetails(currentUser.uid, plan);
+      userDoc = {
+        ...userDoc,
+        activePlan: plan,
+        connectionStatus: plan.connectionStatus,
+      };
+    } catch (error) {
+      console.error(error);
+      userDoc = { ...userDoc, activePlan: plan };
+    }
+  }
+
+  return userDoc;
+}
+
+function renderDashboard() {
+  const plan = (userDoc && userDoc.activePlan) || {};
+  const connected = getConnectionStatus() === "connected";
+  const name =
+    currentUser && (currentUser.displayName || currentUser.email)
+      ? currentUser.displayName || currentUser.email
+      : "guest";
+
+  document.getElementById("dash-welcome").textContent = "Welcome back, " + name;
+  document.getElementById("dash-plan-name").textContent =
+    plan.name || "Active hostel Wi‑Fi plan";
+  document.getElementById("dash-plan-validity").textContent =
+    "Valid until " + (plan.validUntil || "—");
+  document.getElementById("dash-speed").textContent = plan.speed || "—";
+  document.getElementById("dash-duration").textContent = plan.durationLabel || "—";
+  document.getElementById("dash-paid").textContent =
+    plan.amount != null ? formatINR(plan.amount) : "—";
+  document.getElementById("dash-status").textContent = connected ? "Online" : "Offline";
+  document.getElementById("dash-cred-user").textContent = plan.wifiUsername || "—";
+  document.getElementById("dash-cred-pass").textContent = plan.wifiPassword || "—";
+  document.getElementById("dash-mac").textContent = plan.macAddress || "—";
+  document.getElementById("dash-device").textContent = plan.deviceLabel || detectDeviceLabel();
+  document.getElementById("dash-binding").textContent = connected
+    ? "MAC locked · session live"
+    : "MAC locked · disconnected";
+
+  const pill = document.getElementById("dash-status-pill");
+  const label = document.getElementById("dash-connection-label");
+  pill.classList.toggle("is-offline", !connected);
+  label.textContent = connected ? "Connected" : "Disconnected";
+  btnDashToggle.textContent = connected ? "Disconnect Wi‑Fi" : "Reconnect Wi‑Fi";
+}
+
+async function routeAfterAuth() {
+  updateAccountBar();
+  if (hasActiveSubscription(userDoc)) {
+    await hydrateActivePlanDetails();
+    renderDashboard();
+    updateAccountBar();
+    showScreen("dashboard");
+    return;
+  }
+
+  syncPlanSelectionFromUserDoc();
+  updatePricingUI();
+  showScreen("plans");
 }
 
 function syncPlanSelectionFromUserDoc() {
@@ -401,13 +569,7 @@ function randomCreds() {
 }
 
 function validUntil(months) {
-  const d = new Date();
-  d.setDate(d.getDate() + months * 30);
-  return d.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatValidUntil(validUntilDate(months));
 }
 
 function resetSteps() {
@@ -465,7 +627,10 @@ async function runPayment() {
     steps[2].classList.add("done");
 
     const creds = randomCreds();
-    const valid = validUntil(duration.months);
+    const expiry = validUntilDate(duration.months);
+    const valid = formatValidUntil(expiry);
+    const macAddress = currentUser ? macFromUid(currentUser.uid) : macFromUid("guest");
+    const deviceLabel = detectDeviceLabel();
 
     document.getElementById("cred-user").textContent = creds.user;
     document.getElementById("cred-pass").textContent = creds.pass;
@@ -500,7 +665,12 @@ async function runPayment() {
           plan: {
             ...planPayload,
             wifiUsername: creds.user,
+            wifiPassword: creds.pass,
+            macAddress,
+            deviceLabel,
+            connectionStatus: "connected",
             validUntil: valid,
+            validUntilIso: expiry.toISOString(),
           },
           transaction: {
             planId: planPayload.id,
@@ -575,21 +745,94 @@ btnConfirmPay.addEventListener("click", () => {
   runPayment();
 });
 
-btnRestart.addEventListener("click", () => {
+btnRestart.addEventListener("click", async () => {
   clearUploadedDoc();
-  showScreen(currentUser ? "plans" : "auth");
   btnConnect.textContent = "Connect to Network";
   btnConnect.disabled = false;
   btnConfirmPay.disabled = false;
+
+  if (!currentUser) {
+    showScreen("auth");
+    return;
+  }
+
+  if (hasActiveSubscription(userDoc)) {
+    await hydrateActivePlanDetails();
+    renderDashboard();
+    showScreen("dashboard");
+    return;
+  }
+
+  showScreen("plans");
 });
 
-btnConnect.addEventListener("click", () => {
+btnConnect.addEventListener("click", async () => {
   btnConnect.textContent = "Connected ✓";
   btnConnect.disabled = true;
+
+  if (currentUser && hasActiveSubscription(userDoc)) {
+    try {
+      const plan = {
+        ...(userDoc.activePlan || {}),
+        connectionStatus: "connected",
+      };
+      await setConnectionStatus(currentUser.uid, {
+        connectionStatus: "connected",
+        activePlanPatch: plan,
+      });
+      userDoc = {
+        ...userDoc,
+        connectionStatus: "connected",
+        activePlan: plan,
+      };
+      updateAccountBar();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
   setTimeout(() => {
     btnConnect.textContent = "Connect to Network";
     btnConnect.disabled = false;
   }, 2200);
+});
+
+btnDashToggle.addEventListener("click", async () => {
+  if (!currentUser || !hasActiveSubscription(userDoc)) return;
+
+  const nextStatus = getConnectionStatus() === "connected" ? "disconnected" : "connected";
+  btnDashToggle.disabled = true;
+
+  try {
+    const plan = {
+      ...(userDoc.activePlan || {}),
+      connectionStatus: nextStatus,
+    };
+    await setConnectionStatus(currentUser.uid, {
+      connectionStatus: nextStatus,
+      activePlanPatch: plan,
+    });
+    userDoc = {
+      ...userDoc,
+      connectionStatus: nextStatus,
+      activePlan: plan,
+    };
+    renderDashboard();
+    updateAccountBar();
+  } catch (error) {
+    console.error(error);
+    alert(friendlyFirestoreError(error));
+  } finally {
+    btnDashToggle.disabled = false;
+  }
+});
+
+btnDashLogout.addEventListener("click", async () => {
+  try {
+    await logOut();
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 docFileInput.addEventListener("change", () => {
@@ -710,10 +953,7 @@ watchAuthState(async (user) => {
     userDoc = null;
   }
 
-  updateAccountBar();
-  syncPlanSelectionFromUserDoc();
-  updatePricingUI();
-  showScreen("plans");
+  await routeAfterAuth();
 });
 
 setAuthMode("login");

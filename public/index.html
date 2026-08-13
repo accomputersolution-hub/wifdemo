@@ -1450,6 +1450,132 @@
     }
 
 
+
+    /* User dashboard */
+    .dash-hero {
+      text-align: center;
+      margin-bottom: 18px;
+      animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .dash-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(61, 207, 122, 0.35);
+      background: rgba(61, 207, 122, 0.12);
+      color: var(--success);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .dash-pill.is-offline {
+      border-color: rgba(201, 162, 39, 0.35);
+      background: rgba(201, 162, 39, 0.12);
+      color: var(--gold-bright);
+    }
+
+    .dash-pill .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 3px rgba(61, 207, 122, 0.18);
+    }
+
+    .dash-pill.is-offline .dot {
+      box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+    }
+
+    .dash-hero h2 {
+      font-size: clamp(1.4rem, 5vw, 1.7rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .dash-hero p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .dash-plan-card {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 14px;
+    }
+
+    .dash-plan-card .label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+
+    .dash-plan-card .name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .dash-plan-card .validity {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+    }
+
+    .device-card {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid var(--border-soft);
+      margin-bottom: 14px;
+    }
+
+    .device-card .device-title {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .device-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .device-row:first-of-type { border-top: 0; padding-top: 0; }
+
+    .device-row span {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    .device-row strong {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--gold-pale);
+      text-align: right;
+      word-break: break-all;
+    }
+
     /* Account bar */
     .account-bar {
       position: relative;
@@ -2090,6 +2216,104 @@
         </a>
       </section>
 
+
+      <!-- SCREEN: Active user dashboard -->
+      <section id="screen-dashboard" class="screen" aria-label="Active plan dashboard">
+        <div class="dash-hero">
+          <div class="dash-pill" id="dash-status-pill">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="dash-connection-label">Connected</span>
+          </div>
+          <h2>Your Wi‑Fi Dashboard</h2>
+          <p id="dash-welcome">Welcome back</p>
+        </div>
+
+        <div class="dash-plan-card">
+          <p class="label">Active plan</p>
+          <p class="name" id="dash-plan-name">—</p>
+          <p class="validity" id="dash-plan-validity">Valid until —</p>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-pill">
+            <span>Speed</span>
+            <strong id="dash-speed">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Duration</span>
+            <strong id="dash-duration">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Amount Paid</span>
+            <strong id="dash-paid">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Status</span>
+            <strong id="dash-status">Active</strong>
+          </div>
+        </div>
+
+        <div class="creds">
+          <p class="creds-title">Your Wi‑Fi Credentials</p>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">Username</p>
+              <p class="cred-value" id="dash-cred-user">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="dash-cred-user">COPY</button>
+          </div>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">Password</p>
+              <p class="cred-value" id="dash-cred-pass">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="dash-cred-pass">COPY</button>
+          </div>
+        </div>
+
+        <div class="device-card">
+          <p class="device-title">Bound device</p>
+          <div class="device-row">
+            <span>MAC address</span>
+            <strong id="dash-mac">—</strong>
+          </div>
+          <div class="device-row">
+            <span>Device</span>
+            <strong id="dash-device">—</strong>
+          </div>
+          <div class="device-row">
+            <span>Binding</span>
+            <strong id="dash-binding">MAC locked</strong>
+          </div>
+        </div>
+
+        <div class="security-badge" role="status">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <strong>Session protected</strong>
+            <p>Credentials are bound to this device. Sharing is restricted.</p>
+          </div>
+        </div>
+
+        <div class="cta">
+          <button type="button" class="btn" id="btn-dash-toggle">Disconnect Wi‑Fi</button>
+          <button type="button" class="btn btn-ghost" id="btn-dash-logout">Log out</button>
+        </div>
+
+        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
+        <a class="helpline" href="tel:9322752851">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span class="helpline-text">9 AM – 9 PM Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+        </a>
+      </section>
+
       <!-- SCREEN: Success -->
       <section id="screen-success" class="screen" aria-label="Payment successful">
         <div class="success-top">
@@ -2158,7 +2382,7 @@
 
         <div class="cta">
           <button type="button" class="btn" id="btn-connect">Connect to Network</button>
-          <button type="button" class="btn btn-ghost" id="btn-restart">Demo: Start Over</button>
+          <button type="button" class="btn btn-ghost" id="btn-restart">Go to Dashboard</button>
         </div>
 
         <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
