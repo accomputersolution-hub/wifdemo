@@ -153,12 +153,11 @@ function hasActiveSubscription(doc) {
     }
   }
 
-  const status = doc.transactionStatus;
-  if (status && status !== "active" && status !== "paid") {
-    // Still treat as active if an activePlan payload exists from a prior checkout.
-    return Boolean(plan.wifiUsername || plan.name);
-  }
-  return true;
+  const status = String(doc.transactionStatus || "").toLowerCase();
+  if (status === "active" || status === "paid") return true;
+
+  // Fallback for older docs that stored activePlan without status.
+  return Boolean(plan.wifiUsername || plan.name);
 }
 
 function getConnectionStatus() {
@@ -379,7 +378,10 @@ function renderDashboard() {
       ? currentUser.displayName || currentUser.email
       : "guest";
 
-  document.getElementById("dash-welcome").textContent = "Welcome back, " + name;
+  const welcome = document.getElementById("dash-welcome");
+  if (!welcome) return;
+
+  welcome.textContent = "Welcome back, " + name;
   document.getElementById("dash-plan-name").textContent =
     plan.name || "Active hostel Wi‑Fi plan";
   document.getElementById("dash-plan-validity").textContent =
@@ -399,18 +401,79 @@ function renderDashboard() {
 
   const pill = document.getElementById("dash-status-pill");
   const label = document.getElementById("dash-connection-label");
-  pill.classList.toggle("is-offline", !connected);
-  label.textContent = connected ? "Connected" : "Disconnected";
-  btnDashToggle.textContent = connected ? "Disconnect Wi‑Fi" : "Reconnect Wi‑Fi";
+  if (pill && label && btnDashToggle) {
+    pill.classList.toggle("is-offline", !connected);
+    label.textContent = connected ? "Connected" : "Disconnected";
+    btnDashToggle.textContent = connected ? "Disconnect Wi‑Fi" : "Reconnect Wi‑Fi";
+  }
+}
+
+function renderActivePlanView({ fromPayment = false } = {}) {
+  const plan = (userDoc && userDoc.activePlan) || {};
+  const titleEl = document.getElementById("success-title");
+  const subtitleEl = document.getElementById("success-subtitle");
+  const savingsEl = document.getElementById("success-savings");
+
+  if (fromPayment) {
+    titleEl.textContent = "Payment Successful!";
+    subtitleEl.innerHTML =
+      'Your <span id="success-plan-name"></span> is now active.';
+    document.getElementById("success-plan-name").textContent =
+      (plan.name || selected.name) +
+      " · " +
+      (plan.durationLabel || duration.label);
+  } else {
+    titleEl.textContent = "Active Plan Dashboard";
+    subtitleEl.innerHTML =
+      'Your <span id="success-plan-name"></span> is already active.';
+    document.getElementById("success-plan-name").textContent =
+      plan.name || "hostel Wi‑Fi plan";
+    savingsEl.classList.remove("visible");
+  }
+
+  document.getElementById("cred-user").textContent = plan.wifiUsername || "—";
+  document.getElementById("cred-pass").textContent = plan.wifiPassword || "—";
+  document.getElementById("cred-mac").textContent = plan.macAddress || "—";
+  document.getElementById("meta-speed").textContent = plan.speed || "—";
+  document.getElementById("meta-duration").textContent = plan.durationLabel || "—";
+  document.getElementById("meta-paid").textContent =
+    plan.amount != null ? formatINR(plan.amount) : "—";
+  document.getElementById("meta-valid").textContent = plan.validUntil || "—";
+
+  const device = plan.deviceLabel || detectDeviceLabel();
+  const mac = plan.macAddress || "this device";
+  document.getElementById("success-mac-note").textContent =
+    "Bound to " + mac + " · " + device + ". Account sharing is restricted.";
+
+  document.querySelectorAll("#screen-success .copy-btn").forEach((b) => {
+    b.textContent = "COPY";
+    b.classList.remove("copied");
+  });
+
+  const connected = getConnectionStatus() === "connected";
+  btnConnect.textContent = connected ? "Connected ✓" : "Connect to Network";
+  btnConnect.disabled = connected;
+  btnRestart.textContent = "Log out";
+
+  // Keep the secondary dashboard screen in sync if present.
+  if (document.getElementById("dash-plan-name")) {
+    renderDashboard();
+  }
+}
+
+async function openActivePlanDashboard({ fromPayment = false } = {}) {
+  await hydrateActivePlanDetails();
+  renderActivePlanView({ fromPayment });
+  updateAccountBar();
+  showScreen("success");
 }
 
 async function routeAfterAuth() {
   updateAccountBar();
+
+  // Returning subscribers skip plan selection / payment entirely.
   if (hasActiveSubscription(userDoc)) {
-    await hydrateActivePlanDetails();
-    renderDashboard();
-    updateAccountBar();
-    showScreen("dashboard");
+    await openActivePlanDashboard({ fromPayment: false });
     return;
   }
 
@@ -632,33 +695,6 @@ async function runPayment() {
     const macAddress = currentUser ? macFromUid(currentUser.uid) : macFromUid("guest");
     const deviceLabel = detectDeviceLabel();
 
-    document.getElementById("cred-user").textContent = creds.user;
-    document.getElementById("cred-pass").textContent = creds.pass;
-    document.getElementById("success-plan-name").textContent =
-      selected.name + " · " + duration.label;
-    document.getElementById("meta-speed").textContent = selected.speed;
-    document.getElementById("meta-duration").textContent = duration.label;
-    document.getElementById("meta-paid").textContent = formatINR(quote.total);
-    document.getElementById("meta-valid").textContent = valid;
-
-    const savingsEl = document.getElementById("success-savings");
-    if (quote.savings > 0) {
-      document.getElementById("success-savings-amount").textContent =
-        formatINR(quote.savings) +
-        " (" +
-        duration.free +
-        (duration.free === 1 ? " month" : " months") +
-        " free)";
-      savingsEl.classList.add("visible");
-    } else {
-      savingsEl.classList.remove("visible");
-    }
-
-    document.querySelectorAll(".copy-btn").forEach((b) => {
-      b.textContent = "COPY";
-      b.classList.remove("copied");
-    });
-
     if (currentUser) {
       try {
         await activatePlan(currentUser.uid, {
@@ -681,12 +717,56 @@ async function runPayment() {
           },
         });
         userDoc = await getUserDocument(currentUser.uid);
-        updateAccountBar();
       } catch (error) {
         console.error(error);
+        userDoc = {
+          ...(userDoc || {}),
+          transactionStatus: "active",
+          connectionStatus: "connected",
+          activePlan: {
+            ...planPayload,
+            wifiUsername: creds.user,
+            wifiPassword: creds.pass,
+            macAddress,
+            deviceLabel,
+            connectionStatus: "connected",
+            validUntil: valid,
+            validUntilIso: expiry.toISOString(),
+          },
+        };
       }
+    } else {
+      userDoc = {
+        transactionStatus: "active",
+        connectionStatus: "connected",
+        activePlan: {
+          ...planPayload,
+          wifiUsername: creds.user,
+          wifiPassword: creds.pass,
+          macAddress,
+          deviceLabel,
+          connectionStatus: "connected",
+          validUntil: valid,
+          validUntilIso: expiry.toISOString(),
+        },
+      };
     }
 
+    const savingsEl = document.getElementById("success-savings");
+    if (quote.savings > 0) {
+      document.getElementById("success-savings-amount").textContent =
+        formatINR(quote.savings) +
+        " (" +
+        duration.free +
+        (duration.free === 1 ? " month" : " months") +
+        " free)";
+      savingsEl.classList.add("visible");
+    } else {
+      savingsEl.classList.remove("visible");
+    }
+
+    renderActivePlanView({ fromPayment: true });
+    updateAccountBar();
     showScreen("success");
     btnConfirmPay.disabled = false;
   }, 2800);
@@ -746,24 +826,18 @@ btnConfirmPay.addEventListener("click", () => {
 });
 
 btnRestart.addEventListener("click", async () => {
+  // Secondary CTA on the active/success view is Log out.
   clearUploadedDoc();
   btnConnect.textContent = "Connect to Network";
   btnConnect.disabled = false;
   btnConfirmPay.disabled = false;
 
-  if (!currentUser) {
+  try {
+    await logOut();
+  } catch (error) {
+    console.error(error);
     showScreen("auth");
-    return;
   }
-
-  if (hasActiveSubscription(userDoc)) {
-    await hydrateActivePlanDetails();
-    renderDashboard();
-    showScreen("dashboard");
-    return;
-  }
-
-  showScreen("plans");
 });
 
 btnConnect.addEventListener("click", async () => {
@@ -785,16 +859,12 @@ btnConnect.addEventListener("click", async () => {
         connectionStatus: "connected",
         activePlan: plan,
       };
+      renderActivePlanView({ fromPayment: false });
       updateAccountBar();
     } catch (error) {
       console.error(error);
     }
   }
-
-  setTimeout(() => {
-    btnConnect.textContent = "Connect to Network";
-    btnConnect.disabled = false;
-  }, 2200);
 });
 
 btnDashToggle.addEventListener("click", async () => {
@@ -818,6 +888,7 @@ btnDashToggle.addEventListener("click", async () => {
       activePlan: plan,
     };
     renderDashboard();
+    renderActivePlanView({ fromPayment: false });
     updateAccountBar();
   } catch (error) {
     console.error(error);

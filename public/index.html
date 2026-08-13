@@ -2314,8 +2314,8 @@
         </a>
       </section>
 
-      <!-- SCREEN: Success -->
-      <section id="screen-success" class="screen" aria-label="Payment successful">
+      <!-- SCREEN: Success / Active plan dashboard -->
+      <section id="screen-success" class="screen" aria-label="Active plan dashboard">
         <div class="success-top">
           <div class="check-wrap" aria-hidden="true">
             <div class="check-ring"></div>
@@ -2325,8 +2325,8 @@
               </svg>
             </div>
           </div>
-          <h2>Payment Successful!</h2>
-          <p>Your <span id="success-plan-name">plan</span> is now active.</p>
+          <h2 id="success-title">Payment Successful!</h2>
+          <p id="success-subtitle">Your <span id="success-plan-name">plan</span> is now active.</p>
           <p class="success-savings" id="success-savings">You saved <span id="success-savings-amount">₹0</span></p>
         </div>
 
@@ -2346,6 +2346,13 @@
             </div>
             <button type="button" class="copy-btn" data-copy="cred-pass">COPY</button>
           </div>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">MAC Address</p>
+              <p class="cred-value" id="cred-mac">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="cred-mac">COPY</button>
+          </div>
         </div>
 
         <div class="security-badge" role="status">
@@ -2357,7 +2364,7 @@
           </div>
           <div>
             <strong>MAC Bound</strong>
-            <p>Locked to this device. Account sharing is strictly restricted.</p>
+            <p id="success-mac-note">Locked to this device. Account sharing is strictly restricted.</p>
           </div>
         </div>
 
@@ -2382,7 +2389,7 @@
 
         <div class="cta">
           <button type="button" class="btn" id="btn-connect">Connect to Network</button>
-          <button type="button" class="btn btn-ghost" id="btn-restart">Go to Dashboard</button>
+          <button type="button" class="btn btn-ghost" id="btn-restart">Log out</button>
         </div>
 
         <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
