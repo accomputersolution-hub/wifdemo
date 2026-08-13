@@ -19,24 +19,6 @@ import {
   friendlyFirestoreError,
 } from "./user-service.js";
 
-/**
- * DEMO TOGGLE
- * Set true to always open the Active Dashboard after login
- * (even if Firestore has no activePlan yet). Flip from the login screen too.
- */
-const DEMO_FORCE_ACTIVE_DASHBOARD_DEFAULT = true;
-const DEMO_STORAGE_KEY = "kdhamDemoForceDashboard";
-
-function isDemoForceDashboard() {
-  const saved = localStorage.getItem(DEMO_STORAGE_KEY);
-  if (saved === null) return DEMO_FORCE_ACTIVE_DASHBOARD_DEFAULT;
-  return saved === "1";
-}
-
-function setDemoForceDashboard(enabled) {
-  localStorage.setItem(DEMO_STORAGE_KEY, enabled ? "1" : "0");
-}
-
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
 const payMethods = Array.from(document.querySelectorAll(".pay-method"));
@@ -486,69 +468,14 @@ async function openActivePlanDashboard({ fromPayment = false } = {}) {
   showScreen("success");
 }
 
-function buildDemoActivePlan() {
-  const expiry = validUntilDate(1);
-  const uid = (currentUser && currentUser.uid) || "demo-user";
-  const existing = (userDoc && userDoc.activePlan) || {};
-  const creds = randomCreds();
-
-  return {
-    id: existing.id || "streaming",
-    name: existing.name || "50 Mbps Streaming",
-    speed: existing.speed || "50 Mbps",
-    monthlyPrice: existing.monthlyPrice || 599,
-    durationMonths: existing.durationMonths || 1,
-    billableMonths: existing.billableMonths || 1,
-    freeMonths: existing.freeMonths || 0,
-    durationLabel: existing.durationLabel || "1 Month",
-    amount: existing.amount != null ? existing.amount : 599,
-    fullAmount: existing.fullAmount != null ? existing.fullAmount : 599,
-    savings: existing.savings != null ? existing.savings : 0,
-    wifiUsername: existing.wifiUsername || creds.user,
-    wifiPassword: existing.wifiPassword || creds.pass,
-    macAddress: existing.macAddress || macFromUid(uid),
-    deviceLabel: existing.deviceLabel || detectDeviceLabel(),
-    connectionStatus: existing.connectionStatus || "connected",
-    validUntil: existing.validUntil || formatValidUntil(expiry),
-    validUntilIso: existing.validUntilIso || expiry.toISOString(),
-  };
-}
-
-function ensureDemoActivePlanLocal() {
-  const plan = buildDemoActivePlan();
-  userDoc = {
-    ...(userDoc || {}),
-    email: (currentUser && currentUser.email) || (userDoc && userDoc.email) || null,
-    transactionStatus: "active",
-    connectionStatus: plan.connectionStatus || "connected",
-    activePlan: plan,
-  };
-  return userDoc;
-}
-
+/**
+ * After login/signup: load users/{uid} and route by activePlan.
+ * - activePlan present & valid → Active Dashboard
+ * - otherwise → plan selection / payment
+ */
 async function routeAfterAuth() {
   updateAccountBar();
 
-  // Demo mode: always show Active Dashboard after login.
-  if (isDemoForceDashboard()) {
-    ensureDemoActivePlanLocal();
-    // Persist demo plan so reconnect/copy still feel real during the pitch.
-    if (currentUser) {
-      try {
-        await ensureActivePlanDetails(currentUser.uid, userDoc.activePlan);
-        await setConnectionStatus(currentUser.uid, {
-          connectionStatus: userDoc.connectionStatus || "connected",
-          activePlanPatch: userDoc.activePlan,
-        });
-      } catch (error) {
-        console.warn("[demo] Could not persist demo plan to Firestore:", error);
-      }
-    }
-    await openActivePlanDashboard({ fromPayment: false });
-    return;
-  }
-
-  // Returning subscribers skip plan selection / payment entirely.
   if (hasActiveSubscription(userDoc)) {
     await openActivePlanDashboard({ fromPayment: false });
     return;
@@ -1065,7 +992,7 @@ authForm.addEventListener("submit", async (e) => {
     } else {
       await signIn({ email, password });
     }
-    // Auth state listener will switch screens.
+    // Auth state listener loads Firestore and routes by activePlan.
   } catch (error) {
     console.error(error);
     showAuthError(friendlyAuthError(error));
@@ -1082,14 +1009,6 @@ btnLogout.addEventListener("click", async () => {
     console.error(error);
   }
 });
-
-const demoForceCheckbox = document.getElementById("demo-force-dashboard");
-if (demoForceCheckbox) {
-  demoForceCheckbox.checked = isDemoForceDashboard();
-  demoForceCheckbox.addEventListener("change", () => {
-    setDemoForceDashboard(demoForceCheckbox.checked);
-  });
-}
 
 watchAuthState(async (user) => {
   currentUser = user;
