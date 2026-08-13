@@ -14,6 +14,7 @@
 import {
   doc,
   getDoc,
+  getDocFromServer,
   setDoc,
   updateDoc,
   serverTimestamp,
@@ -26,7 +27,13 @@ export function userRef(uid) {
 
 export async function createUserDocument(user, extras = {}) {
   const ref = userRef(user.uid);
-  const existing = await getDoc(ref);
+  // Prefer server read so we never inherit a stale cached doc from another session.
+  let existing = null;
+  try {
+    existing = await getDocFromServer(ref);
+  } catch {
+    existing = await getDoc(ref);
+  }
 
   if (existing.exists()) {
     await updateDoc(ref, {
@@ -47,11 +54,23 @@ export async function createUserDocument(user, extras = {}) {
     activePlan: null,
     transactionStatus: "none",
     lastTransaction: null,
+    connectionStatus: null,
   });
 }
 
+/**
+ * Always load users/{uid} from the Firestore server (not IndexedDB cache).
+ */
 export async function getUserDocument(uid) {
-  const snap = await getDoc(userRef(uid));
+  if (!uid) return null;
+  const ref = userRef(uid);
+  let snap;
+  try {
+    snap = await getDocFromServer(ref);
+  } catch (error) {
+    console.warn("Server fetch failed, falling back to getDoc:", error);
+    snap = await getDoc(ref);
+  }
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 

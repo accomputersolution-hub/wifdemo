@@ -61,6 +61,8 @@ const authSubtitle = document.getElementById("auth-subtitle");
 let currentUser = null;
 let userDoc = null;
 let authMode = "login";
+/** Tracks which Firebase uid the in-memory session belongs to. */
+let sessionUid = null;
 
 let selected = {
   id: "standard",
@@ -204,20 +206,37 @@ function clearActivePlanDisplays() {
 
 /**
  * Reset all in-memory app state to the initial logged-out defaults.
+ * Call this on logout AND before binding a new uid after login/signup.
  */
-function resetClientState() {
+function resetClientState({ clearAuthFields = true } = {}) {
   currentUser = null;
   userDoc = null;
+  sessionUid = null;
   authMode = "login";
   selected = { ...INITIAL_SELECTED };
   duration = { ...INITIAL_DURATION };
   paymentMethod = "upi";
   clearUploadedDoc();
-  clearAuthForm();
+  if (clearAuthFields) clearAuthForm();
   clearPlanUiSelection();
   clearActivePlanDisplays();
   updatePricingUI();
   updateAccountBar();
+}
+
+/**
+ * Wipe previous session completely when auth uid changes or becomes null.
+ */
+function wipePreviousSessionState() {
+  currentUser = null;
+  userDoc = null;
+  sessionUid = null;
+  selected = { ...INITIAL_SELECTED };
+  duration = { ...INITIAL_DURATION };
+  paymentMethod = "upi";
+  clearUploadedDoc();
+  clearPlanUiSelection();
+  clearActivePlanDisplays();
 }
 
 /**
@@ -231,7 +250,7 @@ async function performLogout() {
     console.error("Firebase signOut failed:", error);
   } finally {
     clearBrowserStorage();
-    resetClientState();
+    resetClientState({ clearAuthFields: true });
     setAuthMode("login");
     showScreen("auth");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1112,6 +1131,10 @@ authForm.addEventListener("submit", async (e) => {
     return;
   }
 
+  // Drop any previous in-memory session before creating/signing into an account.
+  wipePreviousSessionState();
+  updateAccountBar();
+
   authSubmit.disabled = true;
   authSubmit.textContent = authMode === "signup" ? "Creating…" : "Signing in…";
 
@@ -1121,9 +1144,11 @@ authForm.addEventListener("submit", async (e) => {
     } else {
       await signIn({ email, password });
     }
-    // Auth state listener loads Firestore and routes by activePlan.
+    // onAuthStateChanged will bind the new uid and fetch Firestore fresh.
   } catch (error) {
     console.error(error);
+    wipePreviousSessionState();
+    updateAccountBar();
     showAuthError(friendlyAuthError(error));
   } finally {
     authSubmit.disabled = false;
@@ -1136,26 +1161,40 @@ btnLogout.addEventListener("click", () => {
 });
 
 watchAuthState(async (user) => {
+  // Always discard previous session variables on any auth transition.
+  const nextUid = user && user.uid ? user.uid : null;
+  const uidChanged = nextUid !== sessionUid;
+
   if (!user) {
-    // Signed out (or first load): keep a clean logged-out UI.
-    // Storage is cleared in performLogout(); still reset memory/UI here.
-    currentUser = null;
-    userDoc = null;
-    clearUploadedDoc();
+    wipePreviousSessionState();
     clearAuthForm();
-    clearActivePlanDisplays();
+    updatePricingUI();
     updateAccountBar();
     setAuthMode("login");
     showScreen("auth");
     return;
   }
 
+  if (uidChanged) {
+    wipePreviousSessionState();
+  }
+
+  // Bind ONLY the authenticated uid, then force a server fetch.
   currentUser = user;
-  // Always fetch a fresh users/{uid} document — never reuse stale userDoc.
+  sessionUid = user.uid;
   userDoc = null;
 
   try {
     userDoc = await getUserDocument(user.uid);
+    // Guard: never keep a doc that doesn't belong to this uid.
+    if (userDoc && userDoc.uid && userDoc.uid !== user.uid) {
+      console.warn("Discarding mismatched user document for uid", user.uid);
+      userDoc = null;
+    }
+    if (userDoc && userDoc.id && userDoc.id !== user.uid) {
+      console.warn("Discarding user document with mismatched id", user.uid);
+      userDoc = null;
+    }
   } catch (error) {
     console.error(error);
     userDoc = null;

@@ -17,6 +17,11 @@ export function watchAuthState(callback) {
 }
 
 export async function signUp({ email, password, displayName = "" }) {
+  // Ensure we never keep a previous Auth session while creating a new account.
+  if (auth.currentUser) {
+    await signOut(auth);
+  }
+
   const credential = await createUserWithEmailAndPassword(auth, email, password);
 
   if (displayName.trim()) {
@@ -31,6 +36,11 @@ export async function signUp({ email, password, displayName = "" }) {
 }
 
 export async function signIn({ email, password }) {
+  // Switch accounts cleanly: drop any existing Auth session first.
+  if (auth.currentUser) {
+    await signOut(auth);
+  }
+
   const credential = await signInWithEmailAndPassword(auth, email, password);
   return credential.user;
 }
