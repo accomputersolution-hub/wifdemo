@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=3.5";
+} from "./auth-service.js?v=3.6";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,7 +18,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=3.5";
+} from "./user-service.js?v=3.6";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -26,12 +26,8 @@ import {
   createOrderOrFallback,
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
-  buildDomesticPrefill,
   normalizeIndiaMobile,
-  resolvePrefillContact,
-  mobileDigits10,
-  SUPPORT_HELPLINE_DIGITS,
-} from "./razorpay-config.js?v=3.5";
+} from "./razorpay-config.js?v=3.6";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -669,12 +665,6 @@ function hydrateCheckoutContactFields() {
   if (mobileEl && !mobileEl.value.trim()) {
     const stored =
       (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) || "";
-    // Never auto-fill the public support helpline as the payer mobile.
-    if (mobileDigits10(stored) === SUPPORT_HELPLINE_DIGITS) {
-      mobileEl.value = "";
-      return;
-    }
-    // Show 10-digit local form when stored as +91…
     const digits = String(stored).replace(/\D/g, "");
     if (digits.length === 12 && digits.startsWith("91")) {
       mobileEl.value = digits.slice(2);
@@ -687,26 +677,17 @@ function hydrateCheckoutContactFields() {
 }
 
 /**
- * Read payer email + mobile from the checkout inputs (live values).
- * Falls back to profile mobile only when the input is empty — never to the
- * static support helpline (9322752851).
+ * Read Checkout Contact fields strictly from the live inputs.
+ * Mobile comes only from #checkout-mobile — no profile/helpline fallback.
  */
 function readCheckoutContactFromForm() {
   const emailEl = document.getElementById("checkout-email");
   const mobileEl = document.getElementById("checkout-mobile");
   const errEl = document.getElementById("checkout-contact-error");
 
-  const userEmail = emailEl
-    ? emailEl.value.trim()
-    : (currentUser && currentUser.email) || "";
-
-  const profileMobile =
-    (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) || "";
-
-  const userMobile = resolvePrefillContact({
-    formMobile: mobileEl ? mobileEl.value : "",
-    profileMobile,
-  });
+  const userEmail = emailEl ? String(emailEl.value || "").trim() : "";
+  // Exact value typed in the mobile input (normalized to +91… for Razorpay).
+  const userMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : "");
 
   if (errEl) {
     errEl.textContent = "";
@@ -729,12 +710,6 @@ function readCheckoutContactFromForm() {
     }
     if (mobileEl) mobileEl.focus();
     return null;
-  }
-
-  // Keep the input in sync with what we will send to Razorpay.
-  if (mobileEl && !mobileEl.value.trim()) {
-    const digits = mobileDigits10(userMobile);
-    if (digits) mobileEl.value = digits;
   }
 
   return { userEmail, userMobile };
@@ -988,10 +963,31 @@ async function startRazorpayCheckout() {
     return;
   }
 
-  // Capture exact email + mobile from the checkout form (never hardcode contact).
-  const contactFields = readCheckoutContactFromForm();
-  if (!contactFields) return;
-  const { userEmail, userMobile } = contactFields;
+  // Strictly from Checkout Contact inputs — no hardcoded phone in this trigger.
+  const emailEl = document.getElementById("checkout-email");
+  const mobileEl = document.getElementById("checkout-mobile");
+  const userEmail = emailEl ? String(emailEl.value || "").trim() : "";
+  const userMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : "");
+
+  if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+    const errEl = document.getElementById("checkout-contact-error");
+    if (errEl) {
+      errEl.textContent = "Enter a valid email for checkout.";
+      errEl.classList.add("visible");
+    }
+    if (emailEl) emailEl.focus();
+    return;
+  }
+
+  if (!userMobile) {
+    const errEl = document.getElementById("checkout-contact-error");
+    if (errEl) {
+      errEl.textContent = "Enter a valid 10-digit Indian mobile number.";
+      errEl.classList.add("visible");
+    }
+    if (mobileEl) mobileEl.focus();
+    return;
+  }
 
   const quote = getQuote();
   const planPayload = buildPlanPayload(quote);
@@ -1093,12 +1089,12 @@ async function startRazorpayCheckout() {
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
     image: "assets/kaivalyadhama-logo.png",
-    // Dynamic only — contact comes from #checkout-mobile (or profile), never a static helpline.
-    prefill: buildDomesticPrefill({
-      name: (currentUser && currentUser.displayName) || "",
+    prefill: {
       email: userEmail,
       contact: userMobile,
-    }),
+      name: (currentUser && currentUser.displayName) || "",
+      method: "upi",
+    },
     notes: {
       planId: planPayload.id,
       planName: planPayload.name,
