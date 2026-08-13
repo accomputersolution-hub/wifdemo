@@ -9,7 +9,7 @@
  *
  * Also see FIREBASE_SETUP.md / README for portal deploy notes.
  */
-export const RAZORPAY_KEY_ID = "rzp_test_YOUR_KEY_HERE";
+export const RAZORPAY_KEY_ID = "rzp_test_TPM1bEMUthy8In";
 
 export const RAZORPAY_CONFIG = {
   name: "Kaivalyadhama Hostel Wi‑Fi",
