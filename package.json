@@ -1,22 +1,14 @@
 {
-  "name": "workspace",
+  "name": "kaivalyadhama-hostel-wifi-portal",
   "version": "1.0.0",
-  "description": "Static captive-portal demo with **Firebase Authentication**, **Cloud Firestore**, and **Firebase Hosting**.",
-  "main": "index.js",
+  "private": true,
+  "description": "Kaivalyadhama hostel Wi-Fi captive portal with Firebase Auth, Firestore, and Hosting.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "serve": "firebase serve --only hosting",
+    "deploy": "firebase deploy --only hosting,firestore:rules",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/accomputersolution-hub/wifdemo.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/accomputersolution-hub/wifdemo/issues"
-  },
-  "homepage": "https://github.com/accomputersolution-hub/wifdemo#readme",
   "devDependencies": {
     "firebase-tools": "^14.27.0"
   }
