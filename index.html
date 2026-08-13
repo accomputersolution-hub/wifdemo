@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2a0a12" />
+  <title>Kaivalyadhama Hostel Wi‑Fi — Captive Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --maroon-deep: #1a060c;
+      --maroon: #5c1224;
+      --maroon-mid: #7a1a32;
+      --maroon-bright: #9b2440;
+      --maroon-soft: rgba(155, 36, 64, 0.22);
+      --gold: #c9a227;
+      --gold-bright: #e8c547;
+      --gold-pale: #f5e6b8;
+      --gold-muted: rgba(201, 162, 39, 0.16);
+      --gold-glow: rgba(201, 162, 39, 0.38);
+      --text: #faf6f0;
+      --text-muted: #c4b5a8;
+      --text-dim: #8a7a70;
+      --success: #3dcf7a;
+      --success-glow: rgba(61, 207, 122, 0.35);
+      --border: rgba(201, 162, 39, 0.28);
+      --border-soft: rgba(255, 255, 255, 0.07);
+      --card-bg: linear-gradient(165deg, rgba(74, 18, 32, 0.92) 0%, rgba(32, 10, 16, 0.97) 100%);
+      --shadow-card: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
+      --radius: 16px;
+      --font-sans: "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+      --font-display: var(--font-sans);
+      --font-ui: var(--font-sans);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { min-height: 100%; height: 100%; }
+
+    body {
+      font-family: var(--font-sans);
+      color: var(--text);
+      background: var(--maroon-deep);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "tnum" 1, "ss01" 1;
+      overflow-x: hidden;
+      line-height: 1.45;
+    }
+
+    .portal {
+      position: relative;
+      min-height: 100%;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 18px calc(24px + var(--safe-bottom));
+      background:
+        radial-gradient(ellipse 100% 50% at 50% -5%, rgba(155, 36, 64, 0.45), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 70%, rgba(201, 162, 39, 0.1), transparent 50%),
+        radial-gradient(ellipse 40% 30% at 0% 50%, rgba(92, 18, 36, 0.5), transparent 45%),
+        linear-gradient(180deg, #2a0a12 0%, #1a060c 55%, #120408 100%);
+      overflow: hidden;
+    }
+
+    .portal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201, 162, 39, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201, 162, 39, 0.04) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(ellipse 75% 55% at 50% 25%, black, transparent);
+      pointer-events: none;
+      opacity: 0.55;
+    }
+
+    .glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(70px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-a {
+      width: 200px;
+      height: 200px;
+      top: -30px;
+      right: -50px;
+      background: rgba(155, 36, 64, 0.45);
+      animation: float 14s ease-in-out infinite;
+    }
+
+    .glow-b {
+      width: 160px;
+      height: 160px;
+      bottom: 12%;
+      left: -40px;
+      background: rgba(201, 162, 39, 0.14);
+      animation: float 18s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(10px, 14px); }
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* Brand */
+    .brand {
+      text-align: center;
+      margin-bottom: 22px;
+      animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .brand-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .logo-seal {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      position: relative;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(232, 197, 71, 0.35), transparent 45%),
+        linear-gradient(160deg, #8b2038 0%, #4a0f1c 55%, #2a0a12 100%);
+      box-shadow:
+        0 0 0 2px rgba(245, 230, 184, 0.25),
+        0 0 0 5px rgba(201, 162, 39, 0.55),
+        0 0 0 7px rgba(90, 20, 35, 0.9),
+        0 12px 36px rgba(0, 0, 0, 0.45),
+        0 0 40px rgba(201, 162, 39, 0.22);
+      margin-bottom: 12px;
+    }
+
+    .logo-seal::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      border: 1px dashed rgba(232, 197, 71, 0.45);
+      pointer-events: none;
+    }
+
+    .logo-seal svg {
+      width: 72px;
+      height: 72px;
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-wordmark {
+      font-family: var(--font-sans);
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold-pale);
+      line-height: 1.1;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .logo-tagline {
+      margin-top: 4px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      opacity: 0.9;
+    }
+
+    .brand-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 220px;
+      margin: 14px auto 14px;
+    }
+
+    .brand-divider span {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.55), transparent);
+    }
+
+    .brand-divider svg {
+      width: 10px;
+      height: 10px;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-family: var(--font-sans);
+      font-size: clamp(1.55rem, 5.5vw, 1.9rem);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .brand h1 em {
+      font-style: normal;
+      display: block;
+      background: linear-gradient(90deg, var(--gold-bright), var(--gold-pale) 50%, var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .brand .sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* Screens */
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      animation: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .screen.active { display: flex; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes checkPop {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(0.92); opacity: 0.55; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    /* Duration selector */
+    .duration-block {
+      margin-bottom: 16px;
+    }
+
+    .duration-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 5px;
+      border-radius: 14px;
+      background: rgba(20, 6, 10, 0.65);
+      border: 1px solid var(--border-soft);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .duration-tab {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      color: var(--text-muted);
+      background: transparent;
+      border-radius: 10px;
+      padding: 10px 6px 9px;
+      text-align: center;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      outline: none;
+    }
+
+    .duration-tab:focus-visible {
+      box-shadow: 0 0 0 2px var(--maroon-deep), 0 0 0 4px var(--gold);
+    }
+
+    .duration-tab[aria-checked="true"] {
+      background: linear-gradient(160deg, rgba(155, 36, 64, 0.85), rgba(74, 18, 32, 0.95));
+      color: var(--text);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.35);
+    }
+
+    .duration-tab .dur-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    .duration-tab .dur-hint {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      line-height: 1.2;
+      min-height: 1.4em;
+    }
+
+    .duration-tab[aria-checked="true"] .dur-hint {
+      color: var(--gold-bright);
+    }
+
+    .duration-tab .dur-save-pill {
+      display: none;
+      position: absolute;
+      top: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #2a0a12;
+      background: linear-gradient(90deg, var(--gold-bright), var(--gold));
+      padding: 2px 7px;
+      border-radius: 999px;
+      box-shadow: 0 3px 10px var(--gold-glow);
+    }
+
+    .duration-tab.has-offer .dur-save-pill {
+      display: block;
+    }
+
+    .price-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -4px 0 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(201, 162, 39, 0.08);
+      border: 1px solid rgba(201, 162, 39, 0.22);
+    }
+
+    .price-summary-left {
+      min-width: 0;
+    }
+
+    .price-summary-left .ps-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+
+    .price-summary-left .ps-detail {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .price-summary-right {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .price-summary-right .ps-total {
+      font-family: var(--font-sans);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .price-summary-right .ps-was {
+      display: none;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-decoration: line-through;
+      margin-top: 2px;
+    }
+
+    .price-summary-right .ps-was.visible {
+      display: block;
+    }
+
+    .savings-chip {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: -6px 0 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #8ef0b4;
+      background: rgba(61, 207, 122, 0.1);
+      border: 1px solid rgba(61, 207, 122, 0.28);
+    }
+
+    .savings-chip.visible {
+      display: flex;
+    }
+
+    /* Plan cards */
+    .plans {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .plan {
+      position: relative;
+      appearance: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      color: var(--text);
+      border-radius: 14px;
+      background: rgba(40, 12, 20, 0.75);
+      padding: 14px 14px 14px 16px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      outline: none;
+    }
+
+    .plan::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(201, 162, 39, 0.2), rgba(255, 255, 255, 0.04));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      transition: background 0.25s ease;
+    }
+
+    .plan:hover {
+      transform: translateY(-1px);
+      background: rgba(58, 16, 28, 0.9);
+    }
+
+    .plan:focus-visible {
+      box-shadow: 0 0 0 2px var(--maroon-deep), 0 0 0 4px var(--gold);
+    }
+
+    .plan[aria-checked="true"] {
+      background: var(--card-bg);
+      box-shadow: var(--shadow-card), 0 0 28px rgba(155, 36, 64, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .plan[aria-checked="true"]::before {
+      background: linear-gradient(145deg, rgba(232, 197, 71, 0.7), rgba(201, 162, 39, 0.15) 45%, rgba(155, 36, 64, 0.5));
+    }
+
+    .plan-radio {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(201, 162, 39, 0.4);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .plan[aria-checked="true"] .plan-radio {
+      border-color: var(--gold-bright);
+      background: rgba(201, 162, 39, 0.15);
+    }
+
+    .plan-radio::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--gold-bright);
+      transform: scale(0);
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 0 8px var(--gold-glow);
+    }
+
+    .plan[aria-checked="true"] .plan-radio::after {
+      transform: scale(1);
+    }
+
+    .plan-body { min-width: 0; }
+
+    .plan-name {
+      font-family: var(--font-sans);
+      font-size: 1.02rem;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 2px;
+      letter-spacing: -0.01em;
+    }
+
+    .plan-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .plan-meta .dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    .plan-price {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .plan-price .amount {
+      font-family: var(--font-sans);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      line-height: 1.15;
+      display: block;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .plan-price .was {
+      display: none;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      text-decoration: line-through;
+      line-height: 1.2;
+    }
+
+    .plan-price .was.visible {
+      display: block;
+    }
+
+    .plan-price .period {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+    }
+
+    .plan-badge {
+      position: absolute;
+      top: -8px;
+      right: 14px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #3a1018;
+      background: linear-gradient(90deg, var(--gold-bright), var(--gold));
+      padding: 4px 10px;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px var(--gold-glow);
+    }
+
+    .plan.is-featured {
+      margin-top: 6px;
+      padding-top: 18px;
+    }
+
+    /* Trust */
+    .trust {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .trust span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .trust svg {
+      width: 13px;
+      height: 13px;
+      color: var(--gold);
+    }
+
+    /* CTA */
+    .cta {
+      margin-top: auto;
+      padding-top: 6px;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      font-family: var(--font-ui);
+      font-size: 1.02rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 17px 22px;
+      border-radius: 14px;
+      color: #2a0a12;
+      background: linear-gradient(135deg, var(--gold-pale) 0%, var(--gold-bright) 40%, var(--gold) 100%);
+      background-size: 200% 100%;
+      box-shadow: 0 12px 32px var(--gold-glow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.35s ease;
+    }
+
+    .btn:hover {
+      background-position: 100% 0;
+      transform: translateY(-1px);
+      box-shadow: 0 16px 36px rgba(201, 162, 39, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    .btn:active { transform: translateY(1px) scale(0.985); }
+
+    .btn:disabled {
+      cursor: wait;
+      opacity: 0.88;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      box-shadow: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    .btn-ghost:hover {
+      color: var(--gold-bright);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .fine {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 20px;
+      text-align: center;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .footer em {
+      font-style: normal;
+      color: var(--gold);
+    }
+
+    .helpline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(201, 162, 39, 0.08);
+      border: 1px solid rgba(201, 162, 39, 0.22);
+      text-align: center;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .helpline svg {
+      width: 16px;
+      height: 16px;
+      color: var(--gold-bright);
+      flex-shrink: 0;
+    }
+
+    .helpline-text {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+      line-height: 1.35;
+    }
+
+    .helpline-text strong {
+      color: var(--gold-pale);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+
+    /* Payment gateway */
+    .gateway-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .gateway-header h2 {
+      font-family: var(--font-sans);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .gateway-header p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .gateway-back {
+      appearance: none;
+      border: 1px solid var(--border-soft);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .gateway-back:hover {
+      color: var(--gold-bright);
+      border-color: var(--border);
+    }
+
+    .gateway-amount-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--card-bg);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 18px;
+      position: relative;
+    }
+
+    .gateway-amount-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(145deg, rgba(232, 197, 71, 0.45), rgba(201, 162, 39, 0.1));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .gateway-amount-card .ga-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 3px;
+    }
+
+    .gateway-amount-card .ga-plan {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .gateway-amount-card .ga-total {
+      font-family: var(--font-sans);
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .pay-methods {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 5px;
+      border-radius: 14px;
+      background: rgba(20, 6, 10, 0.65);
+      border: 1px solid var(--border-soft);
+      margin-bottom: 16px;
+    }
+
+    .pay-method {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      color: var(--text-muted);
+      background: transparent;
+      border-radius: 10px;
+      padding: 10px 3px;
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.25;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+    }
+
+    .pay-method:focus-visible {
+      box-shadow: 0 0 0 2px var(--maroon-deep), 0 0 0 4px var(--gold);
+    }
+
+    .pay-method[aria-selected="true"] {
+      background: linear-gradient(160deg, rgba(155, 36, 64, 0.85), rgba(74, 18, 32, 0.95));
+      color: var(--text);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.35);
+    }
+
+    .pay-panel {
+      display: none;
+      margin-bottom: 16px;
+      animation: rise 0.35s ease both;
+    }
+
+    .pay-panel.active {
+      display: block;
+    }
+
+    .qr-box {
+      margin: 0 auto 14px;
+      width: 168px;
+      height: 168px;
+      border-radius: 14px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px) 0 0 / 12px 12px,
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px) 0 0 / 12px 12px,
+        #faf6f0;
+      border: 3px solid var(--gold);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .qr-box svg {
+      width: 140px;
+      height: 140px;
+    }
+
+    .qr-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .qr-upi-id {
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gold-bright);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      appearance: none;
+      border: 1px solid var(--border-soft);
+      background: rgba(20, 6, 10, 0.55);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      padding: 12px 14px;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--gold);
+    }
+
+    .field input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .secure-note {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 10px;
+    }
+
+    .secure-note svg {
+      width: 12px;
+      height: 12px;
+      color: var(--success);
+    }
+
+    /* Processing */
+    .processing {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 48px 16px;
+      min-height: 420px;
+    }
+
+    .spinner {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      margin-bottom: 26px;
+    }
+
+    .spinner-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--gold-bright);
+      border-right-color: rgba(201, 162, 39, 0.25);
+      animation: spin 0.85s linear infinite;
+    }
+
+    .spinner-core {
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: var(--maroon-soft);
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+    }
+
+    .spinner-core svg {
+      width: 26px;
+      height: 26px;
+      color: var(--gold);
+    }
+
+    .processing h2 {
+      font-family: var(--font-sans);
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .processing > p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 260px;
+    }
+
+    .proc-steps {
+      margin-top: 28px;
+      width: 100%;
+      max-width: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .proc-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      transition: color 0.3s ease;
+    }
+
+    .proc-step.active { color: var(--gold-bright); }
+    .proc-step.done { color: var(--success); }
+
+    .proc-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
+      transition: background 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .proc-step.active .proc-dot {
+      background: var(--gold-bright);
+      box-shadow: 0 0 10px var(--gold-glow);
+      border-radius: 2px;
+    }
+
+    .proc-step.done .proc-dot {
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success-glow);
+      border-radius: 50%;
+    }
+
+    /* Success */
+    .success-top {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-top: 8px;
+    }
+
+    .check-wrap {
+      position: relative;
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 20px;
+    }
+
+    .check-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid var(--success);
+      opacity: 0.4;
+      animation: pulseRing 1.6s ease-out infinite;
+    }
+
+    .check-circle {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #4ae08a, #2aad5c);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 12px 36px var(--success-glow);
+      animation: checkPop 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+    }
+
+    .check-circle svg {
+      width: 34px;
+      height: 34px;
+      color: #fff;
+    }
+
+    .success-top h2 {
+      font-family: var(--font-sans);
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+      animation: rise 0.45s ease 0.2s both;
+    }
+
+    .success-top p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      animation: rise 0.45s ease 0.3s both;
+    }
+
+    .success-top #success-plan-name {
+      color: var(--gold-bright);
+      font-weight: 500;
+    }
+
+    .creds {
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      box-shadow: var(--shadow-card);
+      padding: 20px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+      animation: rise 0.5s ease 0.35s both;
+    }
+
+    .creds::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(160deg, rgba(61, 207, 122, 0.4), rgba(201, 162, 39, 0.2), rgba(155, 36, 64, 0.35));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .creds-title {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    .cred-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+
+    .cred-row:first-of-type { padding-top: 0; }
+    .cred-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+    .cred-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    .cred-value {
+      font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+      font-size: 1.02rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .copy-btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--gold-muted);
+      color: var(--gold-bright);
+      font-family: var(--font-ui);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover,
+    .copy-btn.copied {
+      background: rgba(201, 162, 39, 0.3);
+      color: #fff;
+    }
+
+    .security-badge {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 16px 16px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(201, 162, 39, 0.12), rgba(155, 36, 64, 0.2));
+      border: 1px solid rgba(201, 162, 39, 0.35);
+      margin-bottom: 16px;
+      animation: rise 0.5s ease 0.45s both;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .security-badge .icon {
+      flex-shrink: 0;
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, rgba(201, 162, 39, 0.25), rgba(155, 36, 64, 0.35));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+    }
+
+    .security-badge .icon svg {
+      width: 22px;
+      height: 22px;
+      color: var(--gold-bright);
+    }
+
+    .security-badge strong {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--gold-pale);
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .security-badge p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      font-style: italic;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+      animation: rise 0.5s ease 0.5s both;
+    }
+
+    .meta-pill {
+      padding: 13px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-soft);
+      text-align: center;
+    }
+
+    .meta-pill span {
+      display: block;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .meta-pill strong {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--gold-bright);
+    }
+
+    .success-savings {
+      display: none;
+      text-align: center;
+      margin: -8px 0 18px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #8ef0b4;
+      animation: rise 0.45s ease 0.32s both;
+    }
+
+    .success-savings.visible {
+      display: block;
+    }
+
+    @media (min-width: 480px) {
+      .portal { padding: 36px 24px calc(36px + var(--safe-bottom)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="portal">
+    <div class="glow glow-a" aria-hidden="true"></div>
+    <div class="glow glow-b" aria-hidden="true"></div>
+
+    <div class="wrap">
+      <!-- SCREEN: Plans -->
+      <section id="screen-plans" class="screen active" aria-label="Select Wi‑Fi plan">
+        <header class="brand">
+          <div class="brand-logo">
+            <div class="logo-seal" role="img" aria-label="Kaivalyadhama institutional crest">
+              <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="48" cy="48" r="42" stroke="#e8c547" stroke-width="1.4" opacity="0.9"/>
+                <circle cx="48" cy="48" r="37" stroke="#c9a227" stroke-width="0.8" opacity="0.5"/>
+                <!-- Stylized lotus — institutional yoga motif -->
+                <g transform="translate(48 44)">
+                  <path d="M0 -16 C5.5 -9 6.5 -1.5 0 6 C-6.5 -1.5 -5.5 -9 0 -16Z" fill="#f5e6b8"/>
+                  <path d="M-11 -10 C-1.5 -9 2 -1 0 8 C-9 0 -15 -5 -11 -10Z" fill="#e8c547" opacity="0.92"/>
+                  <path d="M11 -10 C1.5 -9 -2 -1 0 8 C9 0 15 -5 11 -10Z" fill="#e8c547" opacity="0.92"/>
+                  <path d="M-15 0 C-7.5 -2 -2 3 0 12 C-7.5 6 -17 4 -15 0Z" fill="#c9a227" opacity="0.88"/>
+                  <path d="M15 0 C7.5 -2 2 3 0 12 C7.5 6 17 4 15 0Z" fill="#c9a227" opacity="0.88"/>
+                  <circle cx="0" cy="3" r="3.8" fill="#7a1a32" stroke="#f5e6b8" stroke-width="1.15"/>
+                </g>
+                <text x="48" y="76" text-anchor="middle" fill="#e8c547" font-family="'Segoe UI', Inter, Roboto, sans-serif" font-size="6.5" font-weight="600" letter-spacing="1.6">EST. 1924</text>
+              </svg>
+            </div>
+            <p class="logo-wordmark">Kaivalyadhama</p>
+            <p class="logo-tagline">Yoga Research Institute</p>
+          </div>
+          <div class="brand-divider" aria-hidden="true">
+            <span></span>
+            <svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z"/></svg>
+            <span></span>
+          </div>
+          <h1>Hostel Network <em>High Speed Internet</em></h1>
+          <p class="sub">Choose your plan · Instant campus activation</p>
+        </header>
+
+        <p class="section-label">Billing duration</p>
+
+        <div class="duration-block">
+          <div class="duration-tabs" role="radiogroup" aria-label="Billing duration" id="duration-tabs">
+            <button
+              type="button"
+              class="duration-tab"
+              role="radio"
+              aria-checked="true"
+              data-months="1"
+              data-billable="1"
+              data-free="0"
+              data-label="1 Month"
+            >
+              <span class="dur-label">1 Month</span>
+              <span class="dur-hint">Regular price</span>
+            </button>
+            <button
+              type="button"
+              class="duration-tab has-offer"
+              role="radio"
+              aria-checked="false"
+              data-months="6"
+              data-billable="5"
+              data-free="1"
+              data-label="6 Months"
+            >
+              <span class="dur-save-pill">1 Mo Free</span>
+              <span class="dur-label">6 Months</span>
+              <span class="dur-hint">1 month free</span>
+            </button>
+            <button
+              type="button"
+              class="duration-tab has-offer"
+              role="radio"
+              aria-checked="false"
+              data-months="12"
+              data-billable="10"
+              data-free="2"
+              data-label="12 Months"
+            >
+              <span class="dur-save-pill">2 Mo Free</span>
+              <span class="dur-label">12 Months</span>
+              <span class="dur-hint">2 months free</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="section-label">Select your speed plan</p>
+
+        <div class="plans" role="radiogroup" aria-label="Wi‑Fi speed plans" id="plan-list">
+          <button
+            type="button"
+            class="plan"
+            role="radio"
+            aria-checked="true"
+            data-id="standard"
+            data-name="30 Mbps Standard"
+            data-speed="30 Mbps"
+            data-price="399"
+          >
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-body">
+              <span class="plan-name">30 Mbps Standard</span>
+              <span class="plan-meta">
+                Unlimited data
+                <span class="dot" aria-hidden="true"></span>
+                <span class="plan-duration-label">1 month</span>
+              </span>
+            </span>
+            <span class="plan-price">
+              <span class="was" data-was></span>
+              <span class="amount" data-total>₹399</span>
+              <span class="period" data-period>/month</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="plan is-featured"
+            role="radio"
+            aria-checked="false"
+            data-id="streaming"
+            data-name="50 Mbps Streaming"
+            data-speed="50 Mbps"
+            data-price="499"
+          >
+            <span class="plan-badge">Popular</span>
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-body">
+              <span class="plan-name">50 Mbps Streaming</span>
+              <span class="plan-meta">
+                HD streaming ready
+                <span class="dot" aria-hidden="true"></span>
+                <span class="plan-duration-label">1 month</span>
+              </span>
+            </span>
+            <span class="plan-price">
+              <span class="was" data-was></span>
+              <span class="amount" data-total>₹499</span>
+              <span class="period" data-period>/month</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="plan"
+            role="radio"
+            aria-checked="false"
+            data-id="pro"
+            data-name="75 Mbps Pro"
+            data-speed="75 Mbps"
+            data-price="699"
+          >
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-body">
+              <span class="plan-name">75 Mbps Pro</span>
+              <span class="plan-meta">
+                Classes &amp; research
+                <span class="dot" aria-hidden="true"></span>
+                <span class="plan-duration-label">1 month</span>
+              </span>
+            </span>
+            <span class="plan-price">
+              <span class="was" data-was></span>
+              <span class="amount" data-total>₹699</span>
+              <span class="period" data-period>/month</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="plan"
+            role="radio"
+            aria-checked="false"
+            data-id="ultimate"
+            data-name="100 Mbps Ultimate"
+            data-speed="100 Mbps"
+            data-price="799"
+          >
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-body">
+              <span class="plan-name">100 Mbps Ultimate</span>
+              <span class="plan-meta">
+                Peak performance
+                <span class="dot" aria-hidden="true"></span>
+                <span class="plan-duration-label">1 month</span>
+              </span>
+            </span>
+            <span class="plan-price">
+              <span class="was" data-was></span>
+              <span class="amount" data-total>₹799</span>
+              <span class="period" data-period>/month</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="price-summary" aria-live="polite">
+          <div class="price-summary-left">
+            <p class="ps-label">Total payable</p>
+            <p class="ps-detail" id="summary-detail">30 Mbps Standard · 1 Month</p>
+          </div>
+          <div class="price-summary-right">
+            <p class="ps-was" id="summary-was">₹399</p>
+            <p class="ps-total" id="summary-total">₹399</p>
+          </div>
+        </div>
+        <div class="savings-chip" id="savings-chip" aria-live="polite">
+          You save <span id="savings-amount">₹0</span> with this duration
+        </div>
+
+        <div class="trust">
+          <span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            UPI Secure
+          </span>
+          <span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            MAC Bound
+          </span>
+          <span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Instant Access
+          </span>
+        </div>
+
+        <div class="cta">
+          <button type="button" class="btn" id="btn-pay">Proceed to Pay ₹399</button>
+          <p class="fine">By continuing you agree to Kaivalyadhama hostel network fair-usage policy.</p>
+        </div>
+
+        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
+        <a class="helpline" href="tel:9322752851">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+        </a>
+      </section>
+
+      <!-- SCREEN: Payment Gateway -->
+      <section id="screen-gateway" class="screen" aria-label="Secure payment checkout">
+        <div class="gateway-header">
+          <div>
+            <h2>Secure Checkout</h2>
+            <p>Encrypted payment gateway</p>
+          </div>
+          <button type="button" class="gateway-back" id="btn-gateway-back">← Back</button>
+        </div>
+
+        <div class="gateway-amount-card">
+          <div>
+            <p class="ga-label">Paying for</p>
+            <p class="ga-plan" id="gateway-plan">30 Mbps Standard · 1 Month</p>
+          </div>
+          <p class="ga-total" id="gateway-total">₹399</p>
+        </div>
+
+        <p class="section-label">Payment method</p>
+        <div class="pay-methods" role="tablist" aria-label="Payment methods">
+          <button type="button" class="pay-method" role="tab" id="tab-upi" aria-selected="true" aria-controls="panel-upi" data-method="upi">UPI / QR</button>
+          <button type="button" class="pay-method" role="tab" id="tab-card" aria-selected="false" aria-controls="panel-card" data-method="card">Credit / Debit</button>
+          <button type="button" class="pay-method" role="tab" id="tab-net" aria-selected="false" aria-controls="panel-net" data-method="net">Net Banking</button>
+        </div>
+
+        <div class="pay-panel active" id="panel-upi" role="tabpanel" aria-labelledby="tab-upi">
+          <div class="qr-box" aria-label="Dummy UPI QR code">
+            <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect width="120" height="120" fill="#faf6f0"/>
+              <g fill="#1a060c">
+                <rect x="8" y="8" width="28" height="28"/>
+                <rect x="14" y="14" width="16" height="16" fill="#faf6f0"/>
+                <rect x="18" y="18" width="8" height="8"/>
+                <rect x="84" y="8" width="28" height="28"/>
+                <rect x="90" y="14" width="16" height="16" fill="#faf6f0"/>
+                <rect x="94" y="18" width="8" height="8"/>
+                <rect x="8" y="84" width="28" height="28"/>
+                <rect x="14" y="90" width="16" height="16" fill="#faf6f0"/>
+                <rect x="18" y="94" width="8" height="8"/>
+                <rect x="44" y="8" width="6" height="6"/>
+                <rect x="56" y="8" width="6" height="6"/>
+                <rect x="68" y="14" width="6" height="6"/>
+                <rect x="44" y="20" width="6" height="6"/>
+                <rect x="62" y="20" width="6" height="6"/>
+                <rect x="50" y="32" width="6" height="6"/>
+                <rect x="8" y="44" width="6" height="6"/>
+                <rect x="20" y="50" width="6" height="6"/>
+                <rect x="32" y="44" width="6" height="6"/>
+                <rect x="44" y="44" width="12" height="12"/>
+                <rect x="62" y="44" width="6" height="6"/>
+                <rect x="74" y="50" width="6" height="6"/>
+                <rect x="86" y="44" width="6" height="6"/>
+                <rect x="98" y="56" width="6" height="6"/>
+                <rect x="44" y="62" width="6" height="6"/>
+                <rect x="56" y="68" width="6" height="6"/>
+                <rect x="68" y="62" width="6" height="6"/>
+                <rect x="80" y="74" width="6" height="6"/>
+                <rect x="92" y="80" width="6" height="6"/>
+                <rect x="44" y="86" width="6" height="6"/>
+                <rect x="56" y="92" width="6" height="6"/>
+                <rect x="68" y="86" width="12" height="6"/>
+                <rect x="86" y="92" width="6" height="6"/>
+                <rect x="98" y="98" width="6" height="6"/>
+                <rect x="104" y="68" width="6" height="6"/>
+              </g>
+              <rect x="48" y="48" width="24" height="24" rx="4" fill="#7a1a32" stroke="#c9a227" stroke-width="2"/>
+              <circle cx="60" cy="60" r="5" fill="#e8c547"/>
+            </svg>
+          </div>
+          <p class="qr-hint">Scan with any UPI app to pay</p>
+          <p class="qr-upi-id">hostelwifi@kaivalyadhama</p>
+          <div class="field">
+            <label for="upi-id">Or enter UPI ID</label>
+            <input id="upi-id" type="text" placeholder="yourname@upi" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="pay-panel" id="panel-card" role="tabpanel" aria-labelledby="tab-card" hidden>
+          <div class="field">
+            <label for="card-number">Card number</label>
+            <input id="card-number" type="text" inputmode="numeric" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="card-name">Name on card</label>
+            <input id="card-name" type="text" placeholder="Cardholder name" autocomplete="off" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="card-expiry">Expiry</label>
+              <input id="card-expiry" type="text" placeholder="MM/YY" maxlength="5" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="card-cvv">CVV</label>
+              <input id="card-cvv" type="password" inputmode="numeric" placeholder="•••" maxlength="4" autocomplete="off" />
+            </div>
+          </div>
+        </div>
+
+        <div class="pay-panel" id="panel-net" role="tabpanel" aria-labelledby="tab-net" hidden>
+          <div class="field">
+            <label for="bank-select">Select your bank</label>
+            <select id="bank-select">
+              <option value="">Choose bank</option>
+              <option>State Bank of India</option>
+              <option>HDFC Bank</option>
+              <option>ICICI Bank</option>
+              <option>Axis Bank</option>
+              <option>Bank of Baroda</option>
+              <option>Kotak Mahindra Bank</option>
+            </select>
+          </div>
+          <p class="qr-hint" style="text-align:left;margin-top:4px;">You will be redirected to your bank’s secure page (demo).</p>
+        </div>
+
+        <div class="cta">
+          <button type="button" class="btn" id="btn-confirm-pay">Confirm &amp; Pay ₹399</button>
+          <p class="secure-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            256-bit SSL · Demo gateway
+          </p>
+        </div>
+
+        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
+        <a class="helpline" href="tel:9322752851">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+        </a>
+      </section>
+
+      <!-- SCREEN: Processing -->
+      <section id="screen-processing" class="screen" aria-label="Payment processing" aria-live="polite">
+        <div class="processing">
+          <div class="spinner" aria-hidden="true">
+            <div class="spinner-ring"></div>
+            <div class="spinner-core">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M2 10h20"/>
+              </svg>
+            </div>
+          </div>
+          <h2>Processing Payment</h2>
+          <p id="processing-msg">Secure payment gateway · Please wait…</p>
+          <div class="proc-steps">
+            <div class="proc-step active" id="step-1">
+              <span class="proc-dot"></span>
+              Authenticating session
+            </div>
+            <div class="proc-step" id="step-2">
+              <span class="proc-dot"></span>
+              Confirming payment
+            </div>
+            <div class="proc-step" id="step-3">
+              <span class="proc-dot"></span>
+              Binding device &amp; provisioning
+            </div>
+          </div>
+        </div>
+        <a class="helpline" href="tel:9322752851" style="margin-top:auto;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+        </a>
+      </section>
+
+      <!-- SCREEN: Success -->
+      <section id="screen-success" class="screen" aria-label="Payment successful">
+        <div class="success-top">
+          <div class="check-wrap" aria-hidden="true">
+            <div class="check-ring"></div>
+            <div class="check-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+          </div>
+          <h2>Payment Successful!</h2>
+          <p>Your <span id="success-plan-name">plan</span> is now active.</p>
+          <p class="success-savings" id="success-savings">You saved <span id="success-savings-amount">₹0</span></p>
+        </div>
+
+        <div class="creds">
+          <p class="creds-title">Your Wi‑Fi Credentials</p>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">Username</p>
+              <p class="cred-value" id="cred-user">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="cred-user">COPY</button>
+          </div>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">Password</p>
+              <p class="cred-value" id="cred-pass">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="cred-pass">COPY</button>
+          </div>
+        </div>
+
+        <div class="security-badge" role="status">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <strong>MAC Bound</strong>
+            <p>Locked to this device. Account sharing is strictly restricted.</p>
+          </div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-pill">
+            <span>Plan Speed</span>
+            <strong id="meta-speed">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Duration</span>
+            <strong id="meta-duration">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Amount Paid</span>
+            <strong id="meta-paid">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Valid Until</span>
+            <strong id="meta-valid">—</strong>
+          </div>
+        </div>
+
+        <div class="cta">
+          <button type="button" class="btn" id="btn-connect">Connect to Network</button>
+          <button type="button" class="btn btn-ghost" id="btn-restart">Demo: Start Over</button>
+        </div>
+
+        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
+        <a class="helpline" href="tel:9322752851">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+        </a>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const plans = Array.from(document.querySelectorAll(".plan"));
+      const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
+      const payMethods = Array.from(document.querySelectorAll(".pay-method"));
+      const btnPay = document.getElementById("btn-pay");
+      const btnConfirmPay = document.getElementById("btn-confirm-pay");
+      const btnGatewayBack = document.getElementById("btn-gateway-back");
+      const btnRestart = document.getElementById("btn-restart");
+      const btnConnect = document.getElementById("btn-connect");
+      const screens = {
+        plans: document.getElementById("screen-plans"),
+        gateway: document.getElementById("screen-gateway"),
+        processing: document.getElementById("screen-processing"),
+        success: document.getElementById("screen-success"),
+      };
+      const steps = [
+        document.getElementById("step-1"),
+        document.getElementById("step-2"),
+        document.getElementById("step-3"),
+      ];
+
+      let selected = {
+        id: "standard",
+        name: "30 Mbps Standard",
+        speed: "30 Mbps",
+        monthly: 399,
+      };
+
+      let duration = {
+        months: 1,
+        billable: 1,
+        free: 0,
+        label: "1 Month",
+      };
+
+      let paymentMethod = "upi";
+
+      function formatINR(amount) {
+        return "₹" + Number(amount).toLocaleString("en-IN");
+      }
+
+      function calcPricing(monthly) {
+        const full = monthly * duration.months;
+        const total = monthly * duration.billable;
+        const savings = full - total;
+        return { monthly, full, total, savings };
+      }
+
+      function getQuote() {
+        return calcPricing(selected.monthly);
+      }
+
+      function showScreen(name) {
+        Object.values(screens).forEach((el) => el.classList.remove("active"));
+        screens[name].classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function updatePricingUI() {
+        const quote = getQuote();
+        const durationShort =
+          duration.months === 1 ? "1 month" : duration.months + " months";
+        const detail = selected.name + " · " + duration.label;
+
+        plans.forEach((btn) => {
+          const monthly = Number(btn.dataset.price);
+          const p = calcPricing(monthly);
+          const amountEl = btn.querySelector("[data-total]");
+          const wasEl = btn.querySelector("[data-was]");
+          const periodEl = btn.querySelector("[data-period]");
+          const durLabel = btn.querySelector(".plan-duration-label");
+
+          amountEl.textContent = formatINR(p.total);
+          if (p.savings > 0) {
+            wasEl.textContent = formatINR(p.full);
+            wasEl.classList.add("visible");
+            periodEl.textContent = "total · " + duration.label;
+          } else {
+            wasEl.textContent = "";
+            wasEl.classList.remove("visible");
+            periodEl.textContent = "/month";
+          }
+          if (durLabel) durLabel.textContent = durationShort;
+        });
+
+        document.getElementById("summary-detail").textContent = detail;
+        document.getElementById("summary-total").textContent = formatINR(quote.total);
+        document.getElementById("gateway-plan").textContent = detail;
+        document.getElementById("gateway-total").textContent = formatINR(quote.total);
+
+        const wasSummary = document.getElementById("summary-was");
+        const savingsChip = document.getElementById("savings-chip");
+        if (quote.savings > 0) {
+          wasSummary.textContent = formatINR(quote.full);
+          wasSummary.classList.add("visible");
+          document.getElementById("savings-amount").textContent = formatINR(quote.savings);
+          savingsChip.classList.add("visible");
+        } else {
+          wasSummary.classList.remove("visible");
+          savingsChip.classList.remove("visible");
+        }
+
+        btnPay.textContent = "Proceed to Pay " + formatINR(quote.total);
+        btnConfirmPay.textContent = "Confirm & Pay " + formatINR(quote.total);
+      }
+
+      function selectPlan(btn) {
+        plans.forEach((p) => p.setAttribute("aria-checked", "false"));
+        btn.setAttribute("aria-checked", "true");
+        selected = {
+          id: btn.dataset.id,
+          name: btn.dataset.name,
+          speed: btn.dataset.speed,
+          monthly: Number(btn.dataset.price),
+        };
+        updatePricingUI();
+      }
+
+      function selectDuration(btn) {
+        durationTabs.forEach((t) => t.setAttribute("aria-checked", "false"));
+        btn.setAttribute("aria-checked", "true");
+        duration = {
+          months: Number(btn.dataset.months),
+          billable: Number(btn.dataset.billable),
+          free: Number(btn.dataset.free),
+          label: btn.dataset.label,
+        };
+        updatePricingUI();
+      }
+
+      function selectPayMethod(btn) {
+        paymentMethod = btn.dataset.method;
+        payMethods.forEach((t) => t.setAttribute("aria-selected", "false"));
+        btn.setAttribute("aria-selected", "true");
+
+        document.querySelectorAll(".pay-panel").forEach((panel) => {
+          const active = panel.id === "panel-" + paymentMethod;
+          panel.classList.toggle("active", active);
+          panel.hidden = !active;
+        });
+      }
+
+      plans.forEach((btn) => {
+        btn.addEventListener("click", () => selectPlan(btn));
+        btn.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectPlan(btn);
+          }
+        });
+      });
+
+      durationTabs.forEach((btn) => {
+        btn.addEventListener("click", () => selectDuration(btn));
+        btn.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectDuration(btn);
+          }
+        });
+      });
+
+      payMethods.forEach((btn) => {
+        btn.addEventListener("click", () => selectPayMethod(btn));
+      });
+
+      function randomCreds() {
+        const n = String(Math.floor(1000 + Math.random() * 9000));
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+        let suffix = "";
+        for (let i = 0; i < 4; i++) {
+          suffix += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return {
+          user: "kdhm" + n,
+          pass: "Yoga@" + suffix + n.slice(0, 2),
+        };
+      }
+
+      function validUntil(months) {
+        const d = new Date();
+        d.setDate(d.getDate() + months * 30);
+        return d.toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+      }
+
+      function resetSteps() {
+        steps.forEach((s, i) => {
+          s.classList.remove("active", "done");
+          if (i === 0) s.classList.add("active");
+        });
+      }
+
+      function methodLabel() {
+        if (paymentMethod === "card") return "card";
+        if (paymentMethod === "net") return "net banking";
+        return "UPI";
+      }
+
+      function runPayment() {
+        const quote = getQuote();
+        resetSteps();
+        document.getElementById("processing-msg").textContent =
+          "Confirming " + methodLabel() + " payment · Please wait…";
+        showScreen("processing");
+
+        [700, 1400, 2100].forEach((ms, i) => {
+          setTimeout(() => {
+            if (i > 0) {
+              steps[i - 1].classList.remove("active");
+              steps[i - 1].classList.add("done");
+            }
+            steps[i].classList.add("active");
+          }, ms);
+        });
+
+        setTimeout(() => {
+          steps[2].classList.remove("active");
+          steps[2].classList.add("done");
+
+          const creds = randomCreds();
+          document.getElementById("cred-user").textContent = creds.user;
+          document.getElementById("cred-pass").textContent = creds.pass;
+          document.getElementById("success-plan-name").textContent =
+            selected.name + " · " + duration.label;
+          document.getElementById("meta-speed").textContent = selected.speed;
+          document.getElementById("meta-duration").textContent = duration.label;
+          document.getElementById("meta-paid").textContent = formatINR(quote.total);
+          document.getElementById("meta-valid").textContent = validUntil(duration.months);
+
+          const savingsEl = document.getElementById("success-savings");
+          if (quote.savings > 0) {
+            document.getElementById("success-savings-amount").textContent =
+              formatINR(quote.savings) +
+              " (" +
+              duration.free +
+              (duration.free === 1 ? " month" : " months") +
+              " free)";
+            savingsEl.classList.add("visible");
+          } else {
+            savingsEl.classList.remove("visible");
+          }
+
+          document.querySelectorAll(".copy-btn").forEach((b) => {
+            b.textContent = "COPY";
+            b.classList.remove("copied");
+          });
+
+          showScreen("success");
+          btnConfirmPay.disabled = false;
+        }, 2800);
+      }
+
+      btnPay.addEventListener("click", () => {
+        updatePricingUI();
+        showScreen("gateway");
+      });
+
+      btnGatewayBack.addEventListener("click", () => {
+        showScreen("plans");
+      });
+
+      btnConfirmPay.addEventListener("click", () => {
+        btnConfirmPay.disabled = true;
+        runPayment();
+      });
+
+      btnRestart.addEventListener("click", () => {
+        showScreen("plans");
+        btnConnect.textContent = "Connect to Network";
+        btnConnect.disabled = false;
+        btnConfirmPay.disabled = false;
+      });
+
+      btnConnect.addEventListener("click", () => {
+        btnConnect.textContent = "Connected ✓";
+        btnConnect.disabled = true;
+        setTimeout(() => {
+          btnConnect.textContent = "Connect to Network";
+          btnConnect.disabled = false;
+        }, 2200);
+      });
+
+      document.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-copy");
+          const text = document.getElementById(id).textContent;
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+          }
+          btn.textContent = "Copied! ✓";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "COPY";
+            btn.classList.remove("copied");
+          }, 2000);
+        });
+      });
+
+      updatePricingUI();
+    })();
+  </script>
+</body>
+</html>
