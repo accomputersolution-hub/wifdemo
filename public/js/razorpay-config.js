@@ -9,9 +9,17 @@
 import {
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_FINGERPRINT,
-} from "./env.js?v=3.3";
+} from "./env.js?v=3.5";
 
 export { RAZORPAY_KEY_ID, RAZORPAY_KEY_FINGERPRINT };
+
+/**
+ * Hostel support helpline shown in the UI (tel: links).
+ * This is NOT a payer contact and must never be used as a Razorpay
+ * `prefill.contact` default / fallback.
+ */
+export const SUPPORT_HELPLINE_DIGITS = "9322752851";
+
 /** Theme / merchant display for Razorpay Checkout modal */
 export const RAZORPAY_CONFIG = {
   name: "Kaivalyadhama Hostel Wi‑Fi",
@@ -52,14 +60,66 @@ export function getDomesticCheckoutConfig() {
 }
 
 /**
- * Build Razorpay prefill from the checkout form values only.
- * Never invents or hardcodes a phone number.
+ * Normalize to +91XXXXXXXXXX for Razorpay `prefill.contact`.
+ * Returns "" when the value is missing/invalid.
+ * Never substitutes a static/helpline number.
+ */
+export function normalizeIndiaMobile(raw) {
+  if (!raw) return "";
+  const digits = String(raw).replace(/\D/g, "");
+  if (digits.length === 10) return "+91" + digits;
+  if (digits.length === 12 && digits.startsWith("91")) return "+" + digits;
+  if (digits.length > 12 && digits.startsWith("91")) {
+    return "+" + digits.slice(0, 12);
+  }
+  return "";
+}
+
+/**
+ * Digits-only (last 10) for comparing numbers without +91 formatting.
+ */
+export function mobileDigits10(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length >= 12 && digits.startsWith("91")) return digits.slice(-10);
+  if (digits.length > 10) return digits.slice(-10);
+  return digits;
+}
+
+/**
+ * Resolve the payer mobile for Razorpay prefill.
+ * Priority: checkout input → profile mobile → empty.
+ * Never falls back to SUPPORT_HELPLINE_DIGITS or any other static number.
+ *
+ * @param {{ formMobile?: string, profileMobile?: string }} input
+ * @returns {string} E.164-ish +91… or ""
+ */
+export function resolvePrefillContact({ formMobile = "", profileMobile = "" } = {}) {
+  const fromForm = normalizeIndiaMobile(formMobile);
+  if (fromForm) return fromForm;
+
+  const fromProfile = normalizeIndiaMobile(profileMobile);
+  if (!fromProfile) return "";
+
+  // Do not silently reuse the public support helpline as the payer contact.
+  if (mobileDigits10(fromProfile) === SUPPORT_HELPLINE_DIGITS) {
+    return "";
+  }
+
+  return fromProfile;
+}
+
+/**
+ * Build Razorpay `prefill` from dynamic payer values only.
+ * `contact` / `email` must come from the checkout form (or profile).
+ * There is no hardcoded phone default — including 9322752851.
  *
  * @param {{ name?: string, email?: string, contact?: string }} input
  * @returns {{ name?: string, email: string, contact: string, method?: string }}
  */
 export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {}) {
   const userEmail = String(email || "").trim();
+  // Only the caller-supplied contact — never invent / hardcode a number.
   const userMobile = normalizeIndiaMobile(contact);
 
   const prefill = {
@@ -76,18 +136,6 @@ export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {
   }
 
   return prefill;
-}
-
-/** Normalize to +91XXXXXXXXXX for Razorpay contact prefill. */
-export function normalizeIndiaMobile(raw) {
-  if (!raw) return "";
-  const digits = String(raw).replace(/\D/g, "");
-  if (digits.length === 10) return "+91" + digits;
-  if (digits.length === 12 && digits.startsWith("91")) return "+" + digits;
-  if (digits.length > 12 && digits.startsWith("91")) {
-    return "+" + digits.slice(0, 12);
-  }
-  return "";
 }
 
 /**
