@@ -576,6 +576,161 @@
       padding-top: 18px;
     }
 
+    /* Document upload */
+    .doc-upload {
+      margin: 0 0 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(20, 6, 10, 0.45);
+      border: 1px solid var(--border-soft);
+    }
+
+    .doc-upload-head {
+      margin-bottom: 10px;
+    }
+
+    .doc-upload-head .section-label {
+      margin-bottom: 4px;
+    }
+
+    .doc-upload-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .doc-drop {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 108px;
+      padding: 18px 14px;
+      border-radius: 12px;
+      border: 1.5px dashed rgba(201, 162, 39, 0.42);
+      background: rgba(201, 162, 39, 0.05);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      text-align: center;
+    }
+
+    .doc-drop:hover,
+    .doc-drop:focus-within,
+    .doc-drop.is-dragover {
+      border-color: var(--gold-bright);
+      background: rgba(201, 162, 39, 0.1);
+      box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.12);
+    }
+
+    .doc-drop.has-file {
+      border-style: solid;
+      border-color: rgba(61, 207, 122, 0.45);
+      background: rgba(61, 207, 122, 0.08);
+    }
+
+    .doc-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .doc-drop-icon {
+      width: 28px;
+      height: 28px;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .doc-drop.has-file .doc-drop-icon {
+      color: var(--success);
+    }
+
+    .doc-drop-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .doc-drop-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .doc-file-meta {
+      display: none;
+      margin-top: 10px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(74, 18, 32, 0.55);
+      border: 1px solid rgba(61, 207, 122, 0.28);
+    }
+
+    .doc-file-meta.visible {
+      display: flex;
+    }
+
+    .doc-file-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .doc-file-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-file-size {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .doc-remove {
+      appearance: none;
+      border: 1px solid var(--border-soft);
+      background: rgba(20, 6, 10, 0.55);
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .doc-remove:hover {
+      color: var(--gold-pale);
+      border-color: var(--border);
+    }
+
+    .doc-error {
+      display: none;
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: #ff8a9a;
+    }
+
+    .doc-error.visible {
+      display: block;
+    }
+
     /* Trust */
     .trust {
       display: flex;
@@ -1389,40 +1544,13 @@
             data-id="standard"
             data-name="30 Mbps Standard"
             data-speed="30 Mbps"
-            data-price="399"
+            data-price="499"
           >
             <span class="plan-radio" aria-hidden="true"></span>
             <span class="plan-body">
               <span class="plan-name">30 Mbps Standard</span>
               <span class="plan-meta">
                 Unlimited data
-                <span class="dot" aria-hidden="true"></span>
-                <span class="plan-duration-label">1 month</span>
-              </span>
-            </span>
-            <span class="plan-price">
-              <span class="was" data-was></span>
-              <span class="amount" data-total>₹399</span>
-              <span class="period" data-period>/month</span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            class="plan is-featured"
-            role="radio"
-            aria-checked="false"
-            data-id="streaming"
-            data-name="50 Mbps Streaming"
-            data-speed="50 Mbps"
-            data-price="499"
-          >
-            <span class="plan-badge">Popular</span>
-            <span class="plan-radio" aria-hidden="true"></span>
-            <span class="plan-body">
-              <span class="plan-name">50 Mbps Streaming</span>
-              <span class="plan-meta">
-                HD streaming ready
                 <span class="dot" aria-hidden="true"></span>
                 <span class="plan-duration-label">1 month</span>
               </span>
@@ -1436,13 +1564,40 @@
 
           <button
             type="button"
+            class="plan is-featured"
+            role="radio"
+            aria-checked="false"
+            data-id="streaming"
+            data-name="50 Mbps Streaming"
+            data-speed="50 Mbps"
+            data-price="599"
+          >
+            <span class="plan-badge">Popular</span>
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-body">
+              <span class="plan-name">50 Mbps Streaming</span>
+              <span class="plan-meta">
+                HD streaming ready
+                <span class="dot" aria-hidden="true"></span>
+                <span class="plan-duration-label">1 month</span>
+              </span>
+            </span>
+            <span class="plan-price">
+              <span class="was" data-was></span>
+              <span class="amount" data-total>₹599</span>
+              <span class="period" data-period>/month</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
             class="plan"
             role="radio"
             aria-checked="false"
             data-id="pro"
             data-name="75 Mbps Pro"
             data-speed="75 Mbps"
-            data-price="699"
+            data-price="799"
           >
             <span class="plan-radio" aria-hidden="true"></span>
             <span class="plan-body">
@@ -1455,7 +1610,7 @@
             </span>
             <span class="plan-price">
               <span class="was" data-was></span>
-              <span class="amount" data-total>₹699</span>
+              <span class="amount" data-total>₹799</span>
               <span class="period" data-period>/month</span>
             </span>
           </button>
@@ -1468,7 +1623,7 @@
             data-id="ultimate"
             data-name="100 Mbps Ultimate"
             data-speed="100 Mbps"
-            data-price="799"
+            data-price="899"
           >
             <span class="plan-radio" aria-hidden="true"></span>
             <span class="plan-body">
@@ -1481,7 +1636,7 @@
             </span>
             <span class="plan-price">
               <span class="was" data-was></span>
-              <span class="amount" data-total>₹799</span>
+              <span class="amount" data-total>₹899</span>
               <span class="period" data-period>/month</span>
             </span>
           </button>
@@ -1493,12 +1648,43 @@
             <p class="ps-detail" id="summary-detail">30 Mbps Standard · 1 Month</p>
           </div>
           <div class="price-summary-right">
-            <p class="ps-was" id="summary-was">₹399</p>
-            <p class="ps-total" id="summary-total">₹399</p>
+            <p class="ps-was" id="summary-was">₹499</p>
+            <p class="ps-total" id="summary-total">₹499</p>
           </div>
         </div>
         <div class="savings-chip" id="savings-chip" aria-live="polite">
           You save <span id="savings-amount">₹0</span> with this duration
+        </div>
+
+        <div class="doc-upload" id="doc-upload">
+          <div class="doc-upload-head">
+            <p class="section-label">Upload ID document</p>
+            <p class="doc-upload-hint">Hostel ID, student ID, or Aadhaar (PDF / JPG / PNG · max 5 MB)</p>
+          </div>
+          <label class="doc-drop" id="doc-drop" for="doc-file">
+            <input
+              type="file"
+              id="doc-file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              aria-describedby="doc-error"
+            />
+            <svg class="doc-drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <path d="M12 18v-6"/>
+              <path d="M9 15l3-3 3 3"/>
+            </svg>
+            <span class="doc-drop-title" id="doc-drop-title">Tap to upload document</span>
+            <span class="doc-drop-sub" id="doc-drop-sub">Required for network activation</span>
+          </label>
+          <div class="doc-file-meta" id="doc-file-meta" aria-live="polite">
+            <div class="doc-file-info">
+              <span class="doc-file-name" id="doc-file-name">—</span>
+              <span class="doc-file-size" id="doc-file-size">—</span>
+            </div>
+            <button type="button" class="doc-remove" id="doc-remove">Remove</button>
+          </div>
+          <p class="doc-error" id="doc-error" role="alert"></p>
         </div>
 
         <div class="trust">
@@ -1517,7 +1703,7 @@
         </div>
 
         <div class="cta">
-          <button type="button" class="btn" id="btn-pay">Proceed to Pay ₹399</button>
+          <button type="button" class="btn" id="btn-pay">Proceed to Pay ₹499</button>
           <p class="fine">By continuing you agree to Kaivalyadhama hostel network fair-usage policy.</p>
         </div>
 
@@ -1545,7 +1731,7 @@
             <p class="ga-label">Paying for</p>
             <p class="ga-plan" id="gateway-plan">30 Mbps Standard · 1 Month</p>
           </div>
-          <p class="ga-total" id="gateway-total">₹399</p>
+          <p class="ga-total" id="gateway-total">₹499</p>
         </div>
 
         <p class="section-label">Payment method</p>
@@ -1645,7 +1831,7 @@
         </div>
 
         <div class="cta">
-          <button type="button" class="btn" id="btn-confirm-pay">Confirm &amp; Pay ₹399</button>
+          <button type="button" class="btn" id="btn-confirm-pay">Confirm &amp; Pay ₹499</button>
           <p class="secure-note">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             256-bit SSL · Demo gateway
@@ -1806,7 +1992,7 @@
         id: "standard",
         name: "30 Mbps Standard",
         speed: "30 Mbps",
-        monthly: 399,
+        monthly: 499,
       };
 
       let duration = {
@@ -1817,9 +2003,102 @@
       };
 
       let paymentMethod = "upi";
+      let uploadedDoc = null;
+
+      const docDrop = document.getElementById("doc-drop");
+      const docFileInput = document.getElementById("doc-file");
+      const docFileMeta = document.getElementById("doc-file-meta");
+      const docFileName = document.getElementById("doc-file-name");
+      const docFileSize = document.getElementById("doc-file-size");
+      const docDropTitle = document.getElementById("doc-drop-title");
+      const docDropSub = document.getElementById("doc-drop-sub");
+      const docError = document.getElementById("doc-error");
+      const docRemove = document.getElementById("doc-remove");
+      const MAX_DOC_BYTES = 5 * 1024 * 1024;
+      const ALLOWED_DOC_TYPES = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+      ];
+      const ALLOWED_DOC_EXTS = [".pdf", ".jpg", ".jpeg", ".png"];
 
       function formatINR(amount) {
         return "₹" + Number(amount).toLocaleString("en-IN");
+      }
+
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+      }
+
+      function showDocError(message) {
+        docError.textContent = message;
+        docError.classList.add("visible");
+      }
+
+      function clearDocError() {
+        docError.textContent = "";
+        docError.classList.remove("visible");
+      }
+
+      function isAllowedDoc(file) {
+        const name = (file.name || "").toLowerCase();
+        const extOk = ALLOWED_DOC_EXTS.some((ext) => name.endsWith(ext));
+        const typeOk = !file.type || ALLOWED_DOC_TYPES.includes(file.type);
+        return extOk && typeOk;
+      }
+
+      function clearUploadedDoc() {
+        uploadedDoc = null;
+        docFileInput.value = "";
+        docDrop.classList.remove("has-file");
+        docFileMeta.classList.remove("visible");
+        docFileName.textContent = "—";
+        docFileSize.textContent = "—";
+        docDropTitle.textContent = "Tap to upload document";
+        docDropSub.textContent = "Required for network activation";
+        clearDocError();
+      }
+
+      function setUploadedDoc(file) {
+        if (!file) {
+          clearUploadedDoc();
+          return false;
+        }
+        if (!isAllowedDoc(file)) {
+          clearUploadedDoc();
+          showDocError("Please upload a PDF, JPG, or PNG file.");
+          return false;
+        }
+        if (file.size > MAX_DOC_BYTES) {
+          clearUploadedDoc();
+          showDocError("File is too large. Maximum size is 5 MB.");
+          return false;
+        }
+
+        uploadedDoc = file;
+        clearDocError();
+        docDrop.classList.add("has-file");
+        docFileMeta.classList.add("visible");
+        docFileName.textContent = file.name;
+        docFileSize.textContent = formatFileSize(file.size);
+        docDropTitle.textContent = "Document ready";
+        docDropSub.textContent = "You can replace this file anytime";
+        return true;
+      }
+
+      function requireDocument() {
+        if (uploadedDoc) {
+          clearDocError();
+          return true;
+        }
+        showDocError("Please upload your ID document before payment.");
+        document.getElementById("doc-upload").scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        return false;
       }
 
       function calcPricing(monthly) {
@@ -2038,6 +2317,7 @@
       }
 
       btnPay.addEventListener("click", () => {
+        if (!requireDocument()) return;
         updatePricingUI();
         showScreen("gateway");
       });
@@ -2052,6 +2332,7 @@
       });
 
       btnRestart.addEventListener("click", () => {
+        clearUploadedDoc();
         showScreen("plans");
         btnConnect.textContent = "Connect to Network";
         btnConnect.disabled = false;
@@ -2065,6 +2346,39 @@
           btnConnect.textContent = "Connect to Network";
           btnConnect.disabled = false;
         }, 2200);
+      });
+
+      docFileInput.addEventListener("change", () => {
+        const file = docFileInput.files && docFileInput.files[0];
+        setUploadedDoc(file || null);
+      });
+
+      docRemove.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        clearUploadedDoc();
+      });
+
+      ["dragenter", "dragover"].forEach((evt) => {
+        docDrop.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          docDrop.classList.add("is-dragover");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((evt) => {
+        docDrop.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          docDrop.classList.remove("is-dragover");
+        });
+      });
+
+      docDrop.addEventListener("drop", (e) => {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!file) return;
+        setUploadedDoc(file);
       });
 
       document.querySelectorAll(".copy-btn").forEach((btn) => {
