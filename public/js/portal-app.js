@@ -1083,6 +1083,14 @@ btnLogout.addEventListener("click", async () => {
   }
 });
 
+const demoForceCheckbox = document.getElementById("demo-force-dashboard");
+if (demoForceCheckbox) {
+  demoForceCheckbox.checked = isDemoForceDashboard();
+  demoForceCheckbox.addEventListener("change", () => {
+    setDemoForceDashboard(demoForceCheckbox.checked);
+  });
+}
+
 watchAuthState(async (user) => {
   currentUser = user;
 
