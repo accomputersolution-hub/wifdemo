@@ -449,10 +449,7 @@ function setAuthMode(mode) {
 }
 
 function normalizeSignupMobile(raw) {
-  const digits = String(raw || "").replace(/\D/g, "");
-  if (digits.length === 10) return "+91" + digits;
-  if (digits.length === 12 && digits.startsWith("91")) return "+" + digits;
-  return "";
+  return normalizeIndiaMobile(raw);
 }
 
 function updateAccountBar() {
