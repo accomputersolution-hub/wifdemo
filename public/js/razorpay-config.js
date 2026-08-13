@@ -9,7 +9,7 @@
 import {
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_FINGERPRINT,
-} from "./env.js?v=2.9";
+} from "./env.js?v=2.8";
 
 export { RAZORPAY_KEY_ID, RAZORPAY_KEY_FINGERPRINT };
 /** Theme / merchant display for Razorpay Checkout modal */
@@ -21,38 +21,32 @@ export const RAZORPAY_CONFIG = {
 };
 
 /**
- * Force India-domestic Checkout UI:
- * - Show only UPI, cards, and netbanking
- * - Hide wallets / EMI / paylater / apps
- * - Do not show Razorpay default blocks (avoids international-card surfaces)
- *
- * Note: International card acceptance is also a Dashboard setting
- * (Payment Methods → Cards → International). Keep it OFF for this demo.
+ * Checkout display: enable all India methods supported by the Test key.
+ * Includes Cards, Netbanking, UPI, Wallets, Pay Later, EMI, apps, etc.
+ * `show_default_blocks: true` keeps any extra methods Razorpay enables on the account.
  */
 export function getDomesticCheckoutConfig() {
   return {
     display: {
       blocks: {
-        india: {
-          name: "UPI · Card · Netbanking (India)",
+        all: {
+          name: "All payment methods",
           instruments: [
             { method: "upi" },
             { method: "card" },
             { method: "netbanking" },
+            { method: "wallet" },
+            { method: "paylater" },
+            { method: "emi" },
+            { method: "cardless_emi" },
+            { method: "app" },
           ],
         },
       },
-      sequence: ["block.india"],
+      sequence: ["block.all"],
       preferences: {
-        show_default_blocks: false,
+        show_default_blocks: true,
       },
-      hide: [
-        { method: "wallet" },
-        { method: "emi" },
-        { method: "cardless_emi" },
-        { method: "paylater" },
-        { method: "app" },
-      ],
     },
   };
 }
