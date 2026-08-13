@@ -1,19 +1,27 @@
-# Firebase setup & Hosting deploy
+# Firebase setup & Razorpay Standard Checkout
 
-This portal uses the **Firebase Web SDK v12 modular API** and is configured for **Firebase Hosting**.
+## Stack
 
-## Project layout (Hosting-ready)
+- **Frontend:** static site in `public/` (Firebase Hosting)
+- **Backend:** Node/Express in `functions/` (local server + Cloud Function `api`)
+- **Auth / DB:** Firebase Auth + Firestore
+
+## Layout
 
 ```
-firebase.json              # Hosting + Firestore deploy config
-.firebaserc                # Default project: hostel-wifi-160db
-firestore.rules            # Security rules for users/{uid}
-public/                    # ← Hosting public directory
+.env / .env.example
+firebase.json              # Hosting + Functions + /api/** rewrite
+.firebaserc                # hostel-wifi-160db
+firestore.rules
+functions/
+  index.js                 # create-order + verify-payment
+  package.json
+  .env                     # copy from root .env before deploy (gitignored)
+public/
   index.html
-  assets/
   js/
-    firebase.js            # ← Web app config lives here
-    razorpay-config.js     # ← Razorpay Test Key ID (rzp_test_...)
+    firebase.js
+    razorpay-config.js     # API helpers (no Key Secret)
     auth-service.js
     user-service.js
     portal-app.js
@@ -21,87 +29,87 @@ public/                    # ← Hosting public directory
 
 ## 1. Firebase web config
 
-Open **`public/js/firebase.js`** and confirm your web app keys are set
-(Firebase Console → Project settings → Your apps → Web → Config).
+Confirm `public/js/firebase.js` has your web app keys.
 
-## 2. Razorpay Test Key
+## 2. Razorpay credentials (server only)
 
-Open **`public/js/razorpay-config.js`** and paste your Test Mode Key ID:
-
-```js
-export const RAZORPAY_KEY_ID = "rzp_test_xxxxxxxxxxxxxxxxxxxx";
+```bash
+cp .env.example .env
+# set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET
+cp .env functions/.env
 ```
 
-Generate keys from Razorpay Dashboard → Account & Settings → API Keys → **Test Mode**.
-Do **not** put the Key Secret in the browser.
+Never put `RAZORPAY_KEY_SECRET` in `public/` or commit `.env`.
 
-## 3. Enable products in Firebase Console
+## 3. Enable Firebase products
 
-1. **Authentication → Sign-in method → Email/Password → Enable**
-2. **Firestore Database → Create database**
-3. **Authentication → Settings → Authorized domains**  
-   After first Hosting deploy, ensure these are listed:
-   - `hostel-wifi-160db.web.app`
-   - `hostel-wifi-160db.firebaseapp.com`
-   - `localhost` (for local testing)
+1. Authentication → Email/Password
+2. Firestore Database
+3. Authorized domains: Hosting URLs + `localhost`
+4. **Blaze plan** (required to deploy Cloud Functions)
 
 ## 4. Local preview
 
 ```bash
-# From repo root
+# API
+npm run api
+
+# Portal
 python3 -m http.server 8080 --directory public
-# open http://localhost:8080
+# http://localhost:8080
 ```
 
-Or with Firebase tools:
+Local frontend calls `http://127.0.0.1:3001/api/...` automatically.
+
+## 5. Deploy
 
 ```bash
-npm install -g firebase-tools
-firebase login
-firebase serve --only hosting
+cd functions && npm install && cd ..
+cp .env functions/.env
+npx firebase use hostel-wifi-160db
+npx firebase deploy --only hosting,functions,firestore:rules
 ```
 
-## 5. Deploy to Firebase Hosting
+Hosting rewrites `/api/**` → Cloud Function `api`.
 
-```bash
-npm install -g firebase-tools   # once
-firebase login                  # once
-firebase use hostel-wifi-160db
-firebase deploy
+## API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/api/create-order` | Create Razorpay order (`amount` ≥ 100 paise) |
+| POST | `/api/verify-payment` | HMAC-SHA256 signature verify |
+| GET | `/api/health` | Health check |
+
+### create-order body
+
+```json
+{ "amount": 49900, "currency": "INR", "receipt": "rcpt_123" }
 ```
 
-Useful variants:
+### verify-payment body
 
-```bash
-firebase deploy --only hosting
-firebase deploy --only firestore:rules
-firebase deploy --only hosting,firestore:rules
+```json
+{
+  "razorpay_order_id": "order_...",
+  "razorpay_payment_id": "pay_...",
+  "razorpay_signature": "..."
+}
 ```
 
-After deploy, open:
-
-- https://hostel-wifi-160db.web.app  
-- https://hostel-wifi-160db.firebaseapp.com  
-
-## What gets stored in Firestore
-
-Collection: **`users`**, document ID = Firebase Auth `uid`
+## Firestore (`users/{uid}`)
 
 | Field | Meaning |
 | --- | --- |
-| `email`, `displayName` | Account profile |
-| `selectedPlan` | Last plan the user clicked / chose |
-| `activePlan` | Plan after successful Razorpay payment (creds, validity, `transactionId`) |
+| `selectedPlan` | Last selected plan |
+| `activePlan` | Activated after **verified** payment |
 | `transactionStatus` | `none` → `selected` → `pending` → `active` / `failed` |
-| `lastTransaction` | Amount, Razorpay payment id, paid/failed status |
+| `lastTransaction` | Amount, Razorpay ids, status |
 
 ## Pre-deploy checklist
 
-- [ ] `public/js/firebase.js` has real `apiKey` / `projectId` / `appId`
-- [ ] `public/js/razorpay-config.js` has a real `rzp_test_...` Key ID
-- [ ] Email/Password auth is enabled
-- [ ] Firestore database exists
-- [ ] `firebase.json` → `"public": "public"` (already set)
-- [ ] SPA rewrite → `**` → `/index.html` (already set)
-- [ ] You are logged in: `firebase login`
-- [ ] Correct project: `firebase use` shows `hostel-wifi-160db`
+- [ ] Root `.env` + `functions/.env` have Test Key ID + Secret
+- [ ] `cd functions && npm install`
+- [ ] Email/Password auth enabled
+- [ ] Firestore exists
+- [ ] Blaze plan enabled (for Functions)
+- [ ] `firebase use` → `hostel-wifi-160db`

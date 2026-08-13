@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=2.2";
+} from "./auth-service.js?v=2.3";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,12 +18,12 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=2.2";
+} from "./user-service.js?v=2.3";
 import {
-  RAZORPAY_KEY_ID,
   RAZORPAY_CONFIG,
-  assertRazorpayKey,
-} from "./razorpay-config.js?v=2.2";
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+} from "./razorpay-config.js?v=2.3";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -864,7 +864,10 @@ async function finalizeSuccessfulPayment({ planPayload, quote, razorpayResponse 
 }
 
 /**
- * Open Razorpay Test Mode checkout for the selected plan.
+ * Open Razorpay Standard Checkout:
+ * 1) POST /api/create-order
+ * 2) open modal with order_id
+ * 3) POST /api/verify-payment (HMAC) then activate plan
  */
 async function startRazorpayCheckout() {
   if (!currentUser) {
@@ -875,13 +878,6 @@ async function startRazorpayCheckout() {
 
   if (typeof window.Razorpay !== "function") {
     alert("Razorpay checkout failed to load. Please refresh and try again.");
-    return;
-  }
-
-  if (!assertRazorpayKey()) {
-    alert(
-      "Add your Razorpay Test Key ID in js/razorpay-config.js (rzp_test_...)."
-    );
     return;
   }
 
@@ -915,12 +911,58 @@ async function startRazorpayCheckout() {
     console.error(error);
   }
 
+  async function recordPaymentFailure(reason) {
+    if (!currentUser) return;
+    try {
+      await markTransactionFailed(currentUser.uid, {
+        planId: planPayload.id,
+        planName: planPayload.name,
+        amount: planPayload.amount,
+        currency: "INR",
+        method: "razorpay",
+        mode: "test",
+        failureReason: reason,
+      });
+      userDoc = {
+        ...(userDoc || {}),
+        transactionStatus: "failed",
+      };
+      updateAccountBar();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  let order;
+  try {
+    order = await createRazorpayOrder({
+      amountPaise,
+      receipt: `wifi_${currentUser.uid.slice(0, 8)}_${Date.now()}`
+        .replace(/[^a-zA-Z0-9_]/g, "")
+        .slice(0, 40),
+      notes: {
+        planId: planPayload.id,
+        planName: planPayload.name,
+        uid: currentUser.uid,
+        durationLabel: planPayload.durationLabel,
+        portal: "kaivalyadhama-hostel-wifi",
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    btnPay.disabled = false;
+    void recordPaymentFailure(error.message || "create-order failed");
+    alert(error.message || "Could not create payment order. Is the API running?");
+    return;
+  }
+
   const options = {
-    key: RAZORPAY_KEY_ID,
-    amount: amountPaise,
-    currency: RAZORPAY_CONFIG.currency || "INR",
+    key: order.key_id,
+    amount: order.amount,
+    currency: order.currency || "INR",
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
+    order_id: order.order_id,
     image: "assets/kaivalyadhama-logo.png",
     prefill: {
       name: currentUser.displayName || "",
@@ -944,40 +986,27 @@ async function startRazorpayCheckout() {
       },
     },
     handler(response) {
-      // Razorpay success — activate plan + dashboard immediately (no delay).
-      finalizeSuccessfulPayment({
-        planPayload,
-        quote,
-        razorpayResponse: response,
-      }).catch((error) => {
-        console.error(error);
-        alert(friendlyFirestoreError(error));
-        btnPay.disabled = false;
-      });
+      (async () => {
+        try {
+          await verifyRazorpayPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          await finalizeSuccessfulPayment({
+            planPayload,
+            quote,
+            razorpayResponse: response,
+          });
+        } catch (error) {
+          console.error(error);
+          void recordPaymentFailure(error.message || "verify failed");
+          alert(error.message || "Payment verification failed.");
+          btnPay.disabled = false;
+        }
+      })();
     },
   };
-
-  async function recordPaymentFailure(reason) {
-    if (!currentUser) return;
-    try {
-      await markTransactionFailed(currentUser.uid, {
-        planId: planPayload.id,
-        planName: planPayload.name,
-        amount: planPayload.amount,
-        currency: "INR",
-        method: "razorpay",
-        mode: "test",
-        failureReason: reason,
-      });
-      userDoc = {
-        ...(userDoc || {}),
-        transactionStatus: "failed",
-      };
-      updateAccountBar();
-    } catch (error) {
-      console.error(error);
-    }
-  }
 
   try {
     const rzp = new window.Razorpay(options);
