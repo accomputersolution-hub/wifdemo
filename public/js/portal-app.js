@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=3.3";
+} from "./auth-service.js?v=3.4";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,7 +18,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=3.3";
+} from "./user-service.js?v=3.4";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -26,9 +26,8 @@ import {
   createOrderOrFallback,
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
-  buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=3.3";
+} from "./razorpay-config.js?v=3.4";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -960,6 +959,11 @@ async function startRazorpayCheckout() {
     return;
   }
 
+  // Capture exact email + mobile from the checkout form (never hardcode contact).
+  const contactFields = readCheckoutContactFromForm();
+  if (!contactFields) return;
+  const { userEmail, userMobile } = contactFields;
+
   const quote = getQuote();
   const planPayload = buildPlanPayload(quote);
   const amountPaise = amountToPaise(quote.total);
@@ -1048,16 +1052,10 @@ async function startRazorpayCheckout() {
   console.info(
     "[Razorpay] opening checkout with",
     RAZORPAY_KEY_FINGERPRINT || checkoutKey.slice(0, 12) + "…",
-    "mode=" + checkout.mode
+    "mode=" + checkout.mode,
+    "prefill.contact=" + userMobile,
+    "prefill.email=" + userEmail
   );
-
-  // Capture exact email + mobile from the checkout form (never hardcode contact).
-  const contactFields = readCheckoutContactFromForm();
-  if (!contactFields) {
-    btnPay.disabled = false;
-    return;
-  }
-  const { userEmail, userMobile } = contactFields;
 
   const options = {
     key: checkoutKey,
@@ -1066,11 +1064,15 @@ async function startRazorpayCheckout() {
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
     image: "assets/kaivalyadhama-logo.png",
-    prefill: buildDomesticPrefill({
-      name: currentUser.displayName || "",
-      email: userEmail,
+    prefill: {
       contact: userMobile,
-    }),
+      email: userEmail,
+      ...(currentUser.displayName
+        ? { name: String(currentUser.displayName).trim() }
+        : {}),
+      // method requires both email and contact to be set
+      method: "upi",
+    },
     notes: {
       planId: planPayload.id,
       planName: planPayload.name,
