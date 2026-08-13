@@ -36,6 +36,7 @@ export async function signIn({ email, password }) {
 }
 
 export async function logOut() {
+  // Firebase Auth signOut — clears IndexedDB / persisted auth session.
   await signOut(auth);
 }
 

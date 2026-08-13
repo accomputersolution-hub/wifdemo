@@ -92,6 +92,152 @@ const MAX_DOC_BYTES = 5 * 1024 * 1024;
 const ALLOWED_DOC_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const ALLOWED_DOC_EXTS = [".pdf", ".jpg", ".jpeg", ".png"];
 
+const INITIAL_SELECTED = {
+  id: "standard",
+  name: "30 Mbps Standard",
+  speed: "30 Mbps",
+  monthly: 499,
+};
+
+const INITIAL_DURATION = {
+  months: 1,
+  billable: 1,
+  free: 0,
+  label: "1 Month",
+};
+
+function clearBrowserStorage() {
+  try {
+    localStorage.clear();
+  } catch (error) {
+    console.warn("Could not clear localStorage:", error);
+  }
+  try {
+    sessionStorage.clear();
+  } catch (error) {
+    console.warn("Could not clear sessionStorage:", error);
+  }
+}
+
+function clearAuthForm() {
+  const email = document.getElementById("auth-email");
+  const password = document.getElementById("auth-password");
+  const name = document.getElementById("auth-name");
+  if (email) email.value = "";
+  if (password) password.value = "";
+  if (name) name.value = "";
+  showAuthError("");
+}
+
+function clearPlanUiSelection() {
+  plans.forEach((btn, index) => {
+    btn.setAttribute("aria-checked", index === 0 ? "true" : "false");
+  });
+  durationTabs.forEach((btn) => {
+    btn.setAttribute(
+      "aria-checked",
+      String(Number(btn.dataset.months) === INITIAL_DURATION.months)
+    );
+  });
+  payMethods.forEach((btn) => {
+    const isUpi = btn.dataset.method === "upi";
+    btn.setAttribute("aria-selected", String(isUpi));
+  });
+  document.querySelectorAll(".pay-panel").forEach((panel) => {
+    const active = panel.id === "panel-upi";
+    panel.classList.toggle("active", active);
+    panel.hidden = !active;
+  });
+}
+
+function clearActivePlanDisplays() {
+  const ids = [
+    "cred-user",
+    "cred-pass",
+    "cred-mac",
+    "meta-speed",
+    "meta-duration",
+    "meta-paid",
+    "meta-valid",
+    "success-plan-name",
+    "dash-cred-user",
+    "dash-cred-pass",
+    "dash-mac",
+    "dash-plan-name",
+    "dash-speed",
+    "dash-duration",
+    "dash-paid",
+    "dash-status",
+    "dash-device",
+    "dash-binding",
+  ];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "—";
+  });
+
+  const title = document.getElementById("success-title");
+  if (title) title.textContent = "Payment Successful!";
+  const subtitle = document.getElementById("success-subtitle");
+  if (subtitle) {
+    subtitle.innerHTML =
+      'Your <span id="success-plan-name">plan</span> is now active.';
+  }
+  const macNote = document.getElementById("success-mac-note");
+  if (macNote) {
+    macNote.textContent =
+      "Locked to this device. Account sharing is strictly restricted.";
+  }
+  const savings = document.getElementById("success-savings");
+  if (savings) savings.classList.remove("visible");
+
+  btnConnect.textContent = "Connect to Network";
+  btnConnect.disabled = false;
+  btnConfirmPay.disabled = false;
+  btnRestart.textContent = "Log out";
+
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.textContent = "COPY";
+    btn.classList.remove("copied");
+  });
+}
+
+/**
+ * Reset all in-memory app state to the initial logged-out defaults.
+ */
+function resetClientState() {
+  currentUser = null;
+  userDoc = null;
+  authMode = "login";
+  selected = { ...INITIAL_SELECTED };
+  duration = { ...INITIAL_DURATION };
+  paymentMethod = "upi";
+  clearUploadedDoc();
+  clearAuthForm();
+  clearPlanUiSelection();
+  clearActivePlanDisplays();
+  updatePricingUI();
+  updateAccountBar();
+}
+
+/**
+ * Full logout: Firebase signOut + clear storage + reset UI to login.
+ * Next login always loads a fresh users/{uid} document from Firestore.
+ */
+async function performLogout() {
+  try {
+    await logOut(); // Firebase Auth signOut()
+  } catch (error) {
+    console.error("Firebase signOut failed:", error);
+  } finally {
+    clearBrowserStorage();
+    resetClientState();
+    setAuthMode("login");
+    showScreen("auth");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
 function formatINR(amount) {
   return "₹" + Number(amount).toLocaleString("en-IN");
 }
@@ -142,22 +288,20 @@ function formatValidUntil(date) {
 }
 
 function hasActiveSubscription(doc) {
-  if (!doc || !doc.activePlan) return false;
+  // Real routing: users/{uid}.activePlan must exist and still be valid.
+  if (!doc || !doc.activePlan || typeof doc.activePlan !== "object") return false;
+
   const plan = doc.activePlan;
-  if (!(plan.id || plan.name)) return false;
+  if (!(plan.id || plan.name || plan.wifiUsername)) return false;
 
   if (plan.validUntilIso) {
     const expiry = new Date(plan.validUntilIso);
-    if (!Number.isNaN(expiry.getTime()) && expiry < new Date()) {
+    if (!Number.isNaN(expiry.getTime()) && expiry.getTime() < Date.now()) {
       return false;
     }
   }
 
-  const status = String(doc.transactionStatus || "").toLowerCase();
-  if (status === "active" || status === "paid") return true;
-
-  // Fallback for older docs that stored activePlan without status.
-  return Boolean(plan.wifiUsername || plan.name);
+  return true;
 }
 
 function getConnectionStatus() {
@@ -829,19 +973,8 @@ btnConfirmPay.addEventListener("click", () => {
   runPayment();
 });
 
-btnRestart.addEventListener("click", async () => {
-  // Secondary CTA on the active/success view is Log out.
-  clearUploadedDoc();
-  btnConnect.textContent = "Connect to Network";
-  btnConnect.disabled = false;
-  btnConfirmPay.disabled = false;
-
-  try {
-    await logOut();
-  } catch (error) {
-    console.error(error);
-    showScreen("auth");
-  }
+btnRestart.addEventListener("click", () => {
+  performLogout();
 });
 
 btnConnect.addEventListener("click", async () => {
@@ -902,12 +1035,8 @@ btnDashToggle.addEventListener("click", async () => {
   }
 });
 
-btnDashLogout.addEventListener("click", async () => {
-  try {
-    await logOut();
-  } catch (error) {
-    console.error(error);
-  }
+btnDashLogout.addEventListener("click", () => {
+  performLogout();
 });
 
 docFileInput.addEventListener("change", () => {
@@ -1002,24 +1131,28 @@ authForm.addEventListener("submit", async (e) => {
   }
 });
 
-btnLogout.addEventListener("click", async () => {
-  try {
-    await logOut();
-  } catch (error) {
-    console.error(error);
-  }
+btnLogout.addEventListener("click", () => {
+  performLogout();
 });
 
 watchAuthState(async (user) => {
-  currentUser = user;
-
   if (!user) {
+    // Signed out (or first load): keep a clean logged-out UI.
+    // Storage is cleared in performLogout(); still reset memory/UI here.
+    currentUser = null;
     userDoc = null;
+    clearUploadedDoc();
+    clearAuthForm();
+    clearActivePlanDisplays();
     updateAccountBar();
     setAuthMode("login");
     showScreen("auth");
     return;
   }
+
+  currentUser = user;
+  // Always fetch a fresh users/{uid} document — never reuse stale userDoc.
+  userDoc = null;
 
   try {
     userDoc = await getUserDocument(user.uid);
