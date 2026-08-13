@@ -9,7 +9,7 @@
 import {
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_FINGERPRINT,
-} from "./env.js?v=3.0";
+} from "./env.js?v=3.1";
 
 export { RAZORPAY_KEY_ID, RAZORPAY_KEY_FINGERPRINT };
 /** Theme / merchant display for Razorpay Checkout modal */

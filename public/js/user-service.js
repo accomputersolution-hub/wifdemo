@@ -19,7 +19,7 @@ import {
   updateDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
-import { db } from "./firebase.js?v=3.0";
+import { db } from "./firebase.js?v=3.1";
 
 export function userRef(uid) {
   return doc(db, "users", uid);
