@@ -19,6 +19,77 @@ export const RAZORPAY_CONFIG = {
 };
 
 /**
+ * Force India-domestic Checkout UI:
+ * - Show only UPI, cards, and netbanking
+ * - Hide wallets / EMI / paylater / apps
+ * - Do not show Razorpay default blocks (avoids international-card surfaces)
+ *
+ * Note: International card acceptance is also a Dashboard setting
+ * (Payment Methods → Cards → International). Keep it OFF for this demo.
+ */
+export function getDomesticCheckoutConfig() {
+  return {
+    display: {
+      blocks: {
+        india: {
+          name: "UPI · Card · Netbanking (India)",
+          instruments: [
+            { method: "upi" },
+            { method: "card" },
+            { method: "netbanking" },
+          ],
+        },
+      },
+      sequence: ["block.india"],
+      preferences: {
+        show_default_blocks: false,
+      },
+      hide: [
+        { method: "wallet" },
+        { method: "emi" },
+        { method: "cardless_emi" },
+        { method: "paylater" },
+        { method: "app" },
+      ],
+    },
+  };
+}
+
+/**
+ * Prefill for domestic INR checkout. Defaults method to UPI when email+contact exist.
+ * Contact is normalized to +91… so Checkout does not treat the payer as international.
+ */
+export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {}) {
+  const prefill = {
+    name: name || "",
+    email: email || "",
+  };
+
+  const normalized = normalizeIndiaMobile(contact);
+  if (normalized) {
+    prefill.contact = normalized;
+  }
+
+  // Razorpay: prefill.method works only when email AND contact are set.
+  if (prefill.email && prefill.contact) {
+    prefill.method = "upi";
+  }
+
+  return prefill;
+}
+
+function normalizeIndiaMobile(raw) {
+  if (!raw) return "";
+  const digits = String(raw).replace(/\D/g, "");
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  if (digits.length > 12 && digits.startsWith("91")) {
+    return `+${digits.slice(0, 12)}`;
+  }
+  return "";
+}
+
+/**
  * Backend base URL.
  * - Production (Firebase Hosting): same-origin → rewrite /api/** → Cloud Function
  * - Local static preview: Express API on PORT 3001

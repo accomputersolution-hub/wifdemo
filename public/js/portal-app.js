@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=2.3";
+} from "./auth-service.js?v=2.5";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,12 +18,12 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=2.3";
+} from "./user-service.js?v=2.5";
 import {
   RAZORPAY_CONFIG,
   createOrderOrFallback,
   verifyPaymentOrSkip,
-} from "./razorpay-config.js?v=2.4";
+} from "./razorpay-config.js?v=2.5";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -933,9 +933,9 @@ async function startRazorpayCheckout() {
     }
   }
 
-  let order;
+  let checkout;
   try {
-    order = await createRazorpayOrder({
+    checkout = await createOrderOrFallback({
       amountPaise,
       receipt: `wifi_${currentUser.uid.slice(0, 8)}_${Date.now()}`
         .replace(/[^a-zA-Z0-9_]/g, "")
@@ -956,29 +956,36 @@ async function startRazorpayCheckout() {
     return;
   }
 
+  const order = checkout.order;
+  const requireVerify = checkout.mode === "standard";
+
   const options = {
     key: order.key_id,
     amount: order.amount,
-    currency: order.currency || "INR",
+    currency: "INR",
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
-    order_id: order.order_id,
     image: "assets/kaivalyadhama-logo.png",
-    prefill: {
+    // Land on domestic Indian methods (UPI first); never force international cards.
+    prefill: buildDomesticPrefill({
       name: currentUser.displayName || "",
       email: currentUser.email || "",
-    },
+      contact:
+        (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) || "",
+    }),
     notes: {
       planId: planPayload.id,
       planName: planPayload.name,
       uid: currentUser.uid,
       durationLabel: planPayload.durationLabel,
       portal: "kaivalyadhama-hostel-wifi",
-      mode: "test",
+      mode: checkout.mode === "standard" ? "test-standard" : "test-fallback",
+      market: "IN",
     },
     theme: {
       color: RAZORPAY_CONFIG.themeColor || "#7a1a32",
     },
+    config: getDomesticCheckoutConfig(),
     modal: {
       ondismiss() {
         void recordPaymentFailure("cancelled");
@@ -988,11 +995,7 @@ async function startRazorpayCheckout() {
     handler(response) {
       (async () => {
         try {
-          await verifyRazorpayPayment({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature,
-          });
+          await verifyPaymentOrSkip(response, { requireVerify });
           await finalizeSuccessfulPayment({
             planPayload,
             quote,
@@ -1007,6 +1010,10 @@ async function startRazorpayCheckout() {
       })();
     },
   };
+
+  if (order.order_id) {
+    options.order_id = order.order_id;
+  }
 
   try {
     const rzp = new window.Razorpay(options);
