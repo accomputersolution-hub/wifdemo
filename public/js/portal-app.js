@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js";
+} from "./auth-service.js?v=2.0";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -17,7 +17,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js";
+} from "./user-service.js?v=2.0";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
