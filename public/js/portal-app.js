@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=2.7";
+} from "./auth-service.js?v=2.8";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,7 +18,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=2.7";
+} from "./user-service.js?v=2.8";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -27,7 +27,7 @@ import {
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
-} from "./razorpay-config.js?v=2.7";
+} from "./razorpay-config.js?v=2.8";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
