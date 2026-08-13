@@ -19,7 +19,7 @@ import {
   updateDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
-import { db } from "./firebase.js?v=2.0";
+import { db } from "./firebase.js?v=2.1";
 
 export function userRef(uid) {
   return doc(db, "users", uid);
@@ -104,7 +104,22 @@ export async function markTransactionPending(uid, transactionPayload) {
 }
 
 /**
- * Called after a successful (demo) payment — activates the plan.
+ * Called when Razorpay checkout is dismissed or payment fails.
+ */
+export async function markTransactionFailed(uid, transactionPayload = {}) {
+  await updateDoc(userRef(uid), {
+    transactionStatus: "failed",
+    lastTransaction: {
+      ...transactionPayload,
+      status: "failed",
+      updatedAt: serverTimestamp(),
+    },
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Called after a successful Razorpay payment — activates the plan.
  */
 export async function activatePlan(uid, { plan, transaction }) {
   await updateDoc(userRef(uid), {

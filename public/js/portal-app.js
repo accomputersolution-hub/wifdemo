@@ -8,16 +8,22 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=2.0";
+} from "./auth-service.js?v=2.1";
 import {
   getUserDocument,
   saveSelectedPlan,
   markTransactionPending,
+  markTransactionFailed,
   activatePlan,
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=2.0";
+} from "./user-service.js?v=2.1";
+import {
+  RAZORPAY_KEY_ID,
+  RAZORPAY_CONFIG,
+  assertRazorpayKey,
+} from "./razorpay-config.js?v=2.1";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -815,26 +821,212 @@ function methodLabel() {
   return "UPI";
 }
 
-async function runPayment() {
-  const quote = getQuote();
-  const planPayload = buildPlanPayload(quote);
-  resetSteps();
-  document.getElementById("processing-msg").textContent =
-    "Confirming " + methodLabel() + " payment · Please wait…";
-  showScreen("processing");
+function amountToPaise(amountInr) {
+  return Math.round(Number(amountInr) * 100);
+}
+
+/**
+ * Persist paid plan + open Active Dashboard immediately (no fake delay).
+ */
+async function finalizeSuccessfulPayment({ planPayload, quote, razorpayResponse }) {
+  const creds = randomCreds();
+  const expiry = validUntilDate(duration.months);
+  const valid = formatValidUntil(expiry);
+  const macAddress = currentUser ? macFromUid(currentUser.uid) : macFromUid("guest");
+  const deviceLabel = detectDeviceLabel();
+  const paymentId =
+    (razorpayResponse && razorpayResponse.razorpay_payment_id) ||
+    `TXN${Date.now().toString(36).toUpperCase()}`;
+
+  const activePlan = {
+    ...planPayload,
+    wifiUsername: creds.user,
+    wifiPassword: creds.pass,
+    macAddress,
+    deviceLabel,
+    connectionStatus: "connected",
+    validUntil: valid,
+    validUntilIso: expiry.toISOString(),
+    transactionId: paymentId,
+    razorpayPaymentId: paymentId,
+  };
+
+  const transaction = {
+    planId: planPayload.id,
+    planName: planPayload.name,
+    amount: planPayload.amount,
+    currency: "INR",
+    method: "razorpay",
+    paymentMethodPreference: paymentMethod,
+    documentName: uploadedDoc ? uploadedDoc.name : null,
+    transactionId: paymentId,
+    razorpayPaymentId: paymentId,
+    razorpayOrderId:
+      (razorpayResponse && razorpayResponse.razorpay_order_id) || null,
+    razorpaySignature:
+      (razorpayResponse && razorpayResponse.razorpay_signature) || null,
+    mode: RAZORPAY_CONFIG.testMode ? "test" : "live",
+  };
 
   if (currentUser) {
     try {
-      await markTransactionPending(currentUser.uid, {
+      await activatePlan(currentUser.uid, {
+        plan: activePlan,
+        transaction,
+      });
+      userDoc = await getUserDocument(currentUser.uid);
+    } catch (error) {
+      console.error(error);
+      userDoc = {
+        ...(userDoc || {}),
+        uid: currentUser.uid,
+        transactionStatus: "active",
+        connectionStatus: "connected",
+        activePlan,
+        lastTransaction: { ...transaction, status: "paid" },
+      };
+    }
+  } else {
+    userDoc = {
+      transactionStatus: "active",
+      connectionStatus: "connected",
+      activePlan,
+      lastTransaction: { ...transaction, status: "paid" },
+    };
+  }
+
+  const savingsEl = document.getElementById("success-savings");
+  if (quote.savings > 0) {
+    document.getElementById("success-savings-amount").textContent =
+      formatINR(quote.savings) +
+      " (" +
+      duration.free +
+      (duration.free === 1 ? " month" : " months") +
+      " free)";
+    savingsEl.classList.add("visible");
+  } else {
+    savingsEl.classList.remove("visible");
+  }
+
+  renderActivePlanView({ fromPayment: true });
+  updateAccountBar();
+  showScreen("success");
+  btnConfirmPay.disabled = false;
+  btnPay.disabled = false;
+}
+
+/**
+ * Open Razorpay Test Mode checkout for the selected plan.
+ */
+async function startRazorpayCheckout() {
+  if (!currentUser) {
+    showScreen("auth");
+    showAuthError("Please log in before payment.");
+    return;
+  }
+
+  if (typeof window.Razorpay !== "function") {
+    alert("Razorpay checkout failed to load. Please refresh and try again.");
+    return;
+  }
+
+  if (!assertRazorpayKey()) {
+    alert(
+      "Add your Razorpay Test Key ID in js/razorpay-config.js (rzp_test_...)."
+    );
+    return;
+  }
+
+  const quote = getQuote();
+  const planPayload = buildPlanPayload(quote);
+  const amountPaise = amountToPaise(quote.total);
+
+  if (!amountPaise || amountPaise < 100) {
+    alert("Invalid payment amount.");
+    return;
+  }
+
+  btnConfirmPay.disabled = true;
+  btnPay.disabled = true;
+
+  try {
+    await markTransactionPending(currentUser.uid, {
+      planId: planPayload.id,
+      planName: planPayload.name,
+      amount: planPayload.amount,
+      currency: "INR",
+      method: "razorpay",
+      documentName: uploadedDoc ? uploadedDoc.name : null,
+      mode: "test",
+    });
+    userDoc = {
+      ...(userDoc || {}),
+      transactionStatus: "pending",
+    };
+    updateAccountBar();
+  } catch (error) {
+    console.error(error);
+  }
+
+  const options = {
+    key: RAZORPAY_KEY_ID,
+    amount: amountPaise,
+    currency: RAZORPAY_CONFIG.currency || "INR",
+    name: RAZORPAY_CONFIG.name,
+    description: planPayload.name + " · " + planPayload.durationLabel,
+    image: "assets/kaivalyadhama-logo.png",
+    prefill: {
+      name: currentUser.displayName || "",
+      email: currentUser.email || "",
+    },
+    notes: {
+      planId: planPayload.id,
+      planName: planPayload.name,
+      uid: currentUser.uid,
+      durationLabel: planPayload.durationLabel,
+      portal: "kaivalyadhama-hostel-wifi",
+      mode: "test",
+    },
+    theme: {
+      color: RAZORPAY_CONFIG.themeColor || "#7a1a32",
+    },
+    modal: {
+      ondismiss() {
+        void recordPaymentFailure("cancelled");
+        btnConfirmPay.disabled = false;
+        btnPay.disabled = false;
+      },
+    },
+    handler(response) {
+      // Razorpay success — activate plan + dashboard immediately (no delay).
+      finalizeSuccessfulPayment({
+        planPayload,
+        quote,
+        razorpayResponse: response,
+      }).catch((error) => {
+        console.error(error);
+        alert(friendlyFirestoreError(error));
+        btnConfirmPay.disabled = false;
+        btnPay.disabled = false;
+      });
+    },
+  };
+
+  async function recordPaymentFailure(reason) {
+    if (!currentUser) return;
+    try {
+      await markTransactionFailed(currentUser.uid, {
         planId: planPayload.id,
         planName: planPayload.name,
         amount: planPayload.amount,
-        method: paymentMethod,
-        documentName: uploadedDoc ? uploadedDoc.name : null,
+        currency: "INR",
+        method: "razorpay",
+        mode: "test",
+        failureReason: reason,
       });
       userDoc = {
         ...(userDoc || {}),
-        transactionStatus: "pending",
+        transactionStatus: "failed",
       };
       updateAccountBar();
     } catch (error) {
@@ -842,101 +1034,32 @@ async function runPayment() {
     }
   }
 
-  [700, 1400, 2100].forEach((ms, i) => {
-    setTimeout(() => {
-      if (i > 0) {
-        steps[i - 1].classList.remove("active");
-        steps[i - 1].classList.add("done");
-      }
-      steps[i].classList.add("active");
-    }, ms);
-  });
-
-  setTimeout(async () => {
-    steps[2].classList.remove("active");
-    steps[2].classList.add("done");
-
-    const creds = randomCreds();
-    const expiry = validUntilDate(duration.months);
-    const valid = formatValidUntil(expiry);
-    const macAddress = currentUser ? macFromUid(currentUser.uid) : macFromUid("guest");
-    const deviceLabel = detectDeviceLabel();
-
-    if (currentUser) {
-      try {
-        await activatePlan(currentUser.uid, {
-          plan: {
-            ...planPayload,
-            wifiUsername: creds.user,
-            wifiPassword: creds.pass,
-            macAddress,
-            deviceLabel,
-            connectionStatus: "connected",
-            validUntil: valid,
-            validUntilIso: expiry.toISOString(),
-          },
-          transaction: {
-            planId: planPayload.id,
-            planName: planPayload.name,
-            amount: planPayload.amount,
-            method: paymentMethod,
-            documentName: uploadedDoc ? uploadedDoc.name : null,
-          },
-        });
-        userDoc = await getUserDocument(currentUser.uid);
-      } catch (error) {
-        console.error(error);
-        userDoc = {
-          ...(userDoc || {}),
-          transactionStatus: "active",
-          connectionStatus: "connected",
-          activePlan: {
-            ...planPayload,
-            wifiUsername: creds.user,
-            wifiPassword: creds.pass,
-            macAddress,
-            deviceLabel,
-            connectionStatus: "connected",
-            validUntil: valid,
-            validUntilIso: expiry.toISOString(),
-          },
-        };
-      }
-    } else {
-      userDoc = {
-        transactionStatus: "active",
-        connectionStatus: "connected",
-        activePlan: {
-          ...planPayload,
-          wifiUsername: creds.user,
-          wifiPassword: creds.pass,
-          macAddress,
-          deviceLabel,
-          connectionStatus: "connected",
-          validUntil: valid,
-          validUntilIso: expiry.toISOString(),
-        },
-      };
-    }
-
-    const savingsEl = document.getElementById("success-savings");
-    if (quote.savings > 0) {
-      document.getElementById("success-savings-amount").textContent =
-        formatINR(quote.savings) +
-        " (" +
-        duration.free +
-        (duration.free === 1 ? " month" : " months") +
-        " free)";
-      savingsEl.classList.add("visible");
-    } else {
-      savingsEl.classList.remove("visible");
-    }
-
-    renderActivePlanView({ fromPayment: true });
-    updateAccountBar();
-    showScreen("success");
+  try {
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (response) => {
+      console.error("Razorpay payment failed:", response);
+      const desc =
+        (response &&
+          response.error &&
+          (response.error.description || response.error.reason)) ||
+        "Payment failed. Please try again.";
+      void recordPaymentFailure(desc);
+      alert(desc);
+      btnConfirmPay.disabled = false;
+      btnPay.disabled = false;
+    });
+    rzp.open();
+  } catch (error) {
+    console.error(error);
+    alert("Could not open Razorpay checkout. Please try again.");
     btnConfirmPay.disabled = false;
-  }, 2800);
+    btnPay.disabled = false;
+  }
+}
+
+/** @deprecated kept as alias — payment now goes through Razorpay */
+async function runPayment() {
+  await startRazorpayCheckout();
 }
 
 plans.forEach((btn) => {
@@ -988,8 +1111,7 @@ btnConfirmPay.addEventListener("click", () => {
     showScreen("auth");
     return;
   }
-  btnConfirmPay.disabled = true;
-  runPayment();
+  startRazorpayCheckout();
 });
 
 btnRestart.addEventListener("click", () => {

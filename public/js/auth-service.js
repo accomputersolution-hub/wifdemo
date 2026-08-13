@@ -9,8 +9,8 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-import { auth } from "./firebase.js?v=2.0";
-import { createUserDocument } from "./user-service.js?v=2.0";
+import { auth } from "./firebase.js?v=2.1";
+import { createUserDocument } from "./user-service.js?v=2.1";
 
 export function watchAuthState(callback) {
   return onAuthStateChanged(auth, callback);

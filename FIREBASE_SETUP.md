@@ -13,6 +13,7 @@ public/                    # ← Hosting public directory
   assets/
   js/
     firebase.js            # ← Web app config lives here
+    razorpay-config.js     # ← Razorpay Test Key ID (rzp_test_...)
     auth-service.js
     user-service.js
     portal-app.js
@@ -23,7 +24,18 @@ public/                    # ← Hosting public directory
 Open **`public/js/firebase.js`** and confirm your web app keys are set
 (Firebase Console → Project settings → Your apps → Web → Config).
 
-## 2. Enable products in Firebase Console
+## 2. Razorpay Test Key
+
+Open **`public/js/razorpay-config.js`** and paste your Test Mode Key ID:
+
+```js
+export const RAZORPAY_KEY_ID = "rzp_test_xxxxxxxxxxxxxxxxxxxx";
+```
+
+Generate keys from Razorpay Dashboard → Account & Settings → API Keys → **Test Mode**.
+Do **not** put the Key Secret in the browser.
+
+## 3. Enable products in Firebase Console
 
 1. **Authentication → Sign-in method → Email/Password → Enable**
 2. **Firestore Database → Create database**
@@ -33,7 +45,7 @@ Open **`public/js/firebase.js`** and confirm your web app keys are set
    - `hostel-wifi-160db.firebaseapp.com`
    - `localhost` (for local testing)
 
-## 3. Local preview
+## 4. Local preview
 
 ```bash
 # From repo root
@@ -49,7 +61,7 @@ firebase login
 firebase serve --only hosting
 ```
 
-## 4. Deploy to Firebase Hosting
+## 5. Deploy to Firebase Hosting
 
 ```bash
 npm install -g firebase-tools   # once
@@ -79,13 +91,14 @@ Collection: **`users`**, document ID = Firebase Auth `uid`
 | --- | --- |
 | `email`, `displayName` | Account profile |
 | `selectedPlan` | Last plan the user clicked / chose |
-| `activePlan` | Plan after successful payment |
-| `transactionStatus` | `none` → `selected` → `pending` → `active` |
-| `lastTransaction` | Amount, method, paid status |
+| `activePlan` | Plan after successful Razorpay payment (creds, validity, `transactionId`) |
+| `transactionStatus` | `none` → `selected` → `pending` → `active` / `failed` |
+| `lastTransaction` | Amount, Razorpay payment id, paid/failed status |
 
 ## Pre-deploy checklist
 
 - [ ] `public/js/firebase.js` has real `apiKey` / `projectId` / `appId`
+- [ ] `public/js/razorpay-config.js` has a real `rzp_test_...` Key ID
 - [ ] Email/Password auth is enabled
 - [ ] Firestore database exists
 - [ ] `firebase.json` → `"public": "public"` (already set)

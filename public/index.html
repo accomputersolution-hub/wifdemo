@@ -2056,7 +2056,7 @@
         <div class="gateway-header">
           <div>
             <h2>Secure Checkout</h2>
-            <p>Encrypted payment gateway</p>
+            <p>Razorpay secure checkout (Test Mode)</p>
           </div>
           <button type="button" class="gateway-back" id="btn-gateway-back">← Back</button>
         </div>
@@ -2169,7 +2169,7 @@
           <button type="button" class="btn" id="btn-confirm-pay">Confirm &amp; Pay ₹499</button>
           <p class="secure-note">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            256-bit SSL · Demo gateway
+            256-bit SSL · Razorpay Test Mode
           </p>
         </div>
 
@@ -2406,6 +2406,7 @@
     </div>
   </div>
 
-  <script type="module" src="js/portal-app.js?v=2.0"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script type="module" src="js/portal-app.js?v=2.1"></script>
 </body>
 </html>

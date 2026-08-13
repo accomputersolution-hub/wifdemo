@@ -1,6 +1,6 @@
 # Kaivalyadhama Hostel Wi‑Fi Portal
 
-Static captive-portal demo with **Firebase Authentication**, **Cloud Firestore**, and **Firebase Hosting**.
+Static captive-portal demo with **Firebase Authentication**, **Cloud Firestore**, **Firebase Hosting**, and **Razorpay Test Mode** checkout.
 
 ## Layout
 
@@ -8,11 +8,20 @@ Static captive-portal demo with **Firebase Authentication**, **Cloud Firestore**
 public/           # Deployed by Firebase Hosting
   index.html
   js/
+    razorpay-config.js   # Paste rzp_test_... Key ID here
   assets/
 firebase.json     # Hosting public dir + SPA rewrites
 .firebaserc       # Project: hostel-wifi-160db
 firestore.rules
 ```
+
+## Razorpay Test Mode
+
+1. Open [Razorpay Dashboard → API Keys](https://dashboard.razorpay.com/app/keys) (Test Mode).
+2. Copy the **Key ID** (`rzp_test_...`) into `public/js/razorpay-config.js`.
+3. Never put the Key Secret in frontend code.
+4. On **Confirm & Pay**, the official Razorpay checkout modal opens with the plan amount in INR (paise).
+5. After a successful test payment, Firestore `users/{uid}.activePlan` is updated and the Active Dashboard opens immediately.
 
 ## Quick start (local)
 
