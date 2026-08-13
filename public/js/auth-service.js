@@ -9,14 +9,14 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-import { auth } from "./firebase.js?v=3.1";
-import { createUserDocument } from "./user-service.js?v=3.1";
+import { auth } from "./firebase.js?v=3.2";
+import { createUserDocument } from "./user-service.js?v=3.2";
 
 export function watchAuthState(callback) {
   return onAuthStateChanged(auth, callback);
 }
 
-export async function signUp({ email, password, displayName = "" }) {
+export async function signUp({ email, password, displayName = "", mobile = "" }) {
   // Ensure we never keep a previous Auth session while creating a new account.
   if (auth.currentUser) {
     await signOut(auth);
@@ -30,6 +30,7 @@ export async function signUp({ email, password, displayName = "" }) {
 
   await createUserDocument(credential.user, {
     displayName: displayName.trim() || null,
+    mobile: mobile.trim() || null,
   });
 
   return credential.user;

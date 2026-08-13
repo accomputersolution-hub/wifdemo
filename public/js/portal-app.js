@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=3.1";
+} from "./auth-service.js?v=3.2";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,7 +18,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=3.1";
+} from "./user-service.js?v=3.2";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -27,7 +27,7 @@ import {
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
-} from "./razorpay-config.js?v=3.1";
+} from "./razorpay-config.js?v=3.2";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -55,6 +55,7 @@ const authForm = document.getElementById("auth-form");
 const authSubmit = document.getElementById("auth-submit");
 const authToggleBtns = Array.from(document.querySelectorAll("[data-auth-mode]"));
 const authNameField = document.getElementById("auth-name-field");
+const authMobileField = document.getElementById("auth-mobile-field");
 const authTitle = document.getElementById("auth-title");
 const authSubtitle = document.getElementById("auth-subtitle");
 
@@ -124,9 +125,11 @@ function clearAuthForm() {
   const email = document.getElementById("auth-email");
   const password = document.getElementById("auth-password");
   const name = document.getElementById("auth-name");
+  const mobile = document.getElementById("auth-mobile");
   if (email) email.value = "";
   if (password) password.value = "";
   if (name) name.value = "";
+  if (mobile) mobile.value = "";
   showAuthError("");
 }
 
@@ -435,12 +438,20 @@ function setAuthMode(mode) {
   });
   const isSignup = mode === "signup";
   authNameField.hidden = !isSignup;
+  if (authMobileField) authMobileField.hidden = !isSignup;
   authTitle.textContent = isSignup ? "Create account" : "Welcome back";
   authSubtitle.textContent = isSignup
-    ? "Sign up to save your plan and activate hostel Wi‑Fi."
+    ? "Sign up with name, mobile, and email to activate hostel Wi‑Fi."
     : "Log in to continue to plan selection and payment.";
   authSubmit.textContent = isSignup ? "Create account" : "Log in";
   showAuthError("");
+}
+
+function normalizeSignupMobile(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 10) return "+91" + digits;
+  if (digits.length === 12 && digits.startsWith("91")) return "+" + digits;
+  return "";
 }
 
 function updateAccountBar() {
@@ -1223,9 +1234,16 @@ authForm.addEventListener("submit", async (e) => {
   const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
   const displayName = document.getElementById("auth-name").value.trim();
+  const mobileRaw = (document.getElementById("auth-mobile") || {}).value || "";
+  const mobile = normalizeSignupMobile(mobileRaw);
 
   if (!email || !password) {
     showAuthError("Email and password are required.");
+    return;
+  }
+
+  if (authMode === "signup" && !mobile) {
+    showAuthError("Enter a valid 10-digit Indian mobile number.");
     return;
   }
 
@@ -1238,7 +1256,7 @@ authForm.addEventListener("submit", async (e) => {
 
   try {
     if (authMode === "signup") {
-      await signUp({ email, password, displayName });
+      await signUp({ email, password, displayName, mobile });
     } else {
       await signIn({ email, password });
     }

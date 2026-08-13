@@ -1781,6 +1781,18 @@
               <label for="auth-name">Full name</label>
               <input id="auth-name" name="name" type="text" autocomplete="name" placeholder="Your name" />
             </div>
+            <div class="field" id="auth-mobile-field" hidden>
+              <label for="auth-mobile">Mobile number</label>
+              <input
+                id="auth-mobile"
+                name="mobile"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel"
+                placeholder="10-digit Indian mobile"
+                maxlength="15"
+              />
+            </div>
             <div class="field">
               <label for="auth-email">Email</label>
               <input id="auth-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
@@ -2280,6 +2292,6 @@
   </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script type="module" src="js/portal-app.js?v=3.1"></script>
+  <script type="module" src="js/portal-app.js?v=3.2"></script>
 </body>
 </html>

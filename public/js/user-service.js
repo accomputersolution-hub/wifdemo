@@ -3,7 +3,7 @@
  *
  * Collection: users/{uid}
  * Fields written by this portal:
- * - email, displayName, createdAt, updatedAt
+ * - email, displayName, mobile, createdAt, updatedAt
  * - selectedPlan (latest plan the user clicked / chose)
  * - activePlan (plan after successful payment, includes wifi creds / MAC)
  * - connectionStatus: connected | disconnected
@@ -19,7 +19,7 @@ import {
   updateDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
-import { db } from "./firebase.js?v=3.1";
+import { db } from "./firebase.js?v=3.2";
 
 export function userRef(uid) {
   return doc(db, "users", uid);
@@ -35,12 +35,19 @@ export async function createUserDocument(user, extras = {}) {
     existing = await getDoc(ref);
   }
 
+  const mobile =
+    extras.mobile != null && String(extras.mobile).trim()
+      ? String(extras.mobile).trim()
+      : null;
+
   if (existing.exists()) {
-    await updateDoc(ref, {
+    const patch = {
       email: user.email || null,
       displayName: extras.displayName ?? user.displayName ?? null,
       updatedAt: serverTimestamp(),
-    });
+    };
+    if (mobile) patch.mobile = mobile;
+    await updateDoc(ref, patch);
     return;
   }
 
@@ -48,6 +55,7 @@ export async function createUserDocument(user, extras = {}) {
     uid: user.uid,
     email: user.email || null,
     displayName: extras.displayName ?? user.displayName ?? null,
+    mobile,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     selectedPlan: null,
