@@ -130,66 +130,22 @@
 
     .brand-logo {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
       margin-bottom: 16px;
-    }
-
-    .logo-seal {
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      position: relative;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at 35% 30%, rgba(232, 197, 71, 0.35), transparent 45%),
-        linear-gradient(160deg, #8b2038 0%, #4a0f1c 55%, #2a0a12 100%);
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fffaf4 0%, #f3ebe0 100%);
       box-shadow:
-        0 0 0 2px rgba(245, 230, 184, 0.25),
-        0 0 0 5px rgba(201, 162, 39, 0.55),
-        0 0 0 7px rgba(90, 20, 35, 0.9),
-        0 12px 36px rgba(0, 0, 0, 0.45),
-        0 0 40px rgba(201, 162, 39, 0.22);
-      margin-bottom: 12px;
+        0 0 0 1px rgba(201, 162, 39, 0.35),
+        0 10px 28px rgba(0, 0, 0, 0.35);
     }
 
-    .logo-seal::before {
-      content: "";
-      position: absolute;
-      inset: 7px;
-      border-radius: 50%;
-      border: 1px dashed rgba(232, 197, 71, 0.45);
-      pointer-events: none;
-    }
-
-    .logo-seal svg {
-      width: 72px;
-      height: 72px;
+    .brand-logo-img {
       display: block;
-      position: relative;
-      z-index: 1;
-    }
-
-    .logo-wordmark {
-      font-family: var(--font-sans);
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold-pale);
-      line-height: 1.1;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-    }
-
-    .logo-tagline {
-      margin-top: 4px;
-      font-size: 0.65rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      opacity: 0.9;
+      width: 100%;
+      max-width: 300px;
+      height: auto;
     }
 
     .brand-divider {
@@ -1357,24 +1313,13 @@
       <section id="screen-plans" class="screen active" aria-label="Select Wi‑Fi plan">
         <header class="brand">
           <div class="brand-logo">
-            <div class="logo-seal" role="img" aria-label="Kaivalyadhama institutional crest">
-              <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle cx="48" cy="48" r="42" stroke="#e8c547" stroke-width="1.4" opacity="0.9"/>
-                <circle cx="48" cy="48" r="37" stroke="#c9a227" stroke-width="0.8" opacity="0.5"/>
-                <!-- Stylized lotus — institutional yoga motif -->
-                <g transform="translate(48 44)">
-                  <path d="M0 -16 C5.5 -9 6.5 -1.5 0 6 C-6.5 -1.5 -5.5 -9 0 -16Z" fill="#f5e6b8"/>
-                  <path d="M-11 -10 C-1.5 -9 2 -1 0 8 C-9 0 -15 -5 -11 -10Z" fill="#e8c547" opacity="0.92"/>
-                  <path d="M11 -10 C1.5 -9 -2 -1 0 8 C9 0 15 -5 11 -10Z" fill="#e8c547" opacity="0.92"/>
-                  <path d="M-15 0 C-7.5 -2 -2 3 0 12 C-7.5 6 -17 4 -15 0Z" fill="#c9a227" opacity="0.88"/>
-                  <path d="M15 0 C7.5 -2 2 3 0 12 C7.5 6 17 4 15 0Z" fill="#c9a227" opacity="0.88"/>
-                  <circle cx="0" cy="3" r="3.8" fill="#7a1a32" stroke="#f5e6b8" stroke-width="1.15"/>
-                </g>
-                <text x="48" y="76" text-anchor="middle" fill="#e8c547" font-family="'Segoe UI', Inter, Roboto, sans-serif" font-size="6.5" font-weight="600" letter-spacing="1.6">EST. 1924</text>
-              </svg>
-            </div>
-            <p class="logo-wordmark">Kaivalyadhama</p>
-            <p class="logo-tagline">Yoga Research Institute</p>
+            <img
+              class="brand-logo-img"
+              src="assets/kaivalyadhama-logo.png"
+              width="790"
+              height="254"
+              alt="Kaivalyadhama — Where Yoga tradition and Science meet"
+            />
           </div>
           <div class="brand-divider" aria-hidden="true">
             <span></span>
