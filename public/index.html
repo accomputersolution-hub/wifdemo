@@ -2038,139 +2038,12 @@
         </div>
 
         <div class="cta">
-          <button type="button" class="btn" id="btn-pay">Proceed to Pay ₹499</button>
-          <p class="fine">By continuing you agree to Kaivalyadhama hostel network fair-usage policy.</p>
-        </div>
-
-        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
-        <a class="helpline" href="tel:9322752851">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-          </svg>
-          <span class="helpline-text">9 AM – 9 PM Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
-        </a>
-      </section>
-
-      <!-- SCREEN: Payment Gateway -->
-      <section id="screen-gateway" class="screen" aria-label="Secure payment checkout">
-        <div class="gateway-header">
-          <div>
-            <h2>Secure Checkout</h2>
-            <p>Razorpay secure checkout (Test Mode)</p>
-          </div>
-          <button type="button" class="gateway-back" id="btn-gateway-back">← Back</button>
-        </div>
-
-        <div class="gateway-amount-card">
-          <div>
-            <p class="ga-label">Paying for</p>
-            <p class="ga-plan" id="gateway-plan">30 Mbps Standard · 1 Month</p>
-          </div>
-          <p class="ga-total" id="gateway-total">₹499</p>
-        </div>
-
-        <p class="section-label">Payment method</p>
-        <div class="pay-methods" role="tablist" aria-label="Payment methods">
-          <button type="button" class="pay-method" role="tab" id="tab-upi" aria-selected="true" aria-controls="panel-upi" data-method="upi">UPI / QR</button>
-          <button type="button" class="pay-method" role="tab" id="tab-card" aria-selected="false" aria-controls="panel-card" data-method="card">Credit / Debit</button>
-          <button type="button" class="pay-method" role="tab" id="tab-net" aria-selected="false" aria-controls="panel-net" data-method="net">Net Banking</button>
-        </div>
-
-        <div class="pay-panel active" id="panel-upi" role="tabpanel" aria-labelledby="tab-upi">
-          <div class="qr-box" aria-label="Dummy UPI QR code">
-            <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect width="120" height="120" fill="#faf6f0"/>
-              <g fill="#1a060c">
-                <rect x="8" y="8" width="28" height="28"/>
-                <rect x="14" y="14" width="16" height="16" fill="#faf6f0"/>
-                <rect x="18" y="18" width="8" height="8"/>
-                <rect x="84" y="8" width="28" height="28"/>
-                <rect x="90" y="14" width="16" height="16" fill="#faf6f0"/>
-                <rect x="94" y="18" width="8" height="8"/>
-                <rect x="8" y="84" width="28" height="28"/>
-                <rect x="14" y="90" width="16" height="16" fill="#faf6f0"/>
-                <rect x="18" y="94" width="8" height="8"/>
-                <rect x="44" y="8" width="6" height="6"/>
-                <rect x="56" y="8" width="6" height="6"/>
-                <rect x="68" y="14" width="6" height="6"/>
-                <rect x="44" y="20" width="6" height="6"/>
-                <rect x="62" y="20" width="6" height="6"/>
-                <rect x="50" y="32" width="6" height="6"/>
-                <rect x="8" y="44" width="6" height="6"/>
-                <rect x="20" y="50" width="6" height="6"/>
-                <rect x="32" y="44" width="6" height="6"/>
-                <rect x="44" y="44" width="12" height="12"/>
-                <rect x="62" y="44" width="6" height="6"/>
-                <rect x="74" y="50" width="6" height="6"/>
-                <rect x="86" y="44" width="6" height="6"/>
-                <rect x="98" y="56" width="6" height="6"/>
-                <rect x="44" y="62" width="6" height="6"/>
-                <rect x="56" y="68" width="6" height="6"/>
-                <rect x="68" y="62" width="6" height="6"/>
-                <rect x="80" y="74" width="6" height="6"/>
-                <rect x="92" y="80" width="6" height="6"/>
-                <rect x="44" y="86" width="6" height="6"/>
-                <rect x="56" y="92" width="6" height="6"/>
-                <rect x="68" y="86" width="12" height="6"/>
-                <rect x="86" y="92" width="6" height="6"/>
-                <rect x="98" y="98" width="6" height="6"/>
-                <rect x="104" y="68" width="6" height="6"/>
-              </g>
-              <rect x="48" y="48" width="24" height="24" rx="4" fill="#7a1a32" stroke="#c9a227" stroke-width="2"/>
-              <circle cx="60" cy="60" r="5" fill="#e8c547"/>
-            </svg>
-          </div>
-          <p class="qr-hint">Scan with any UPI app to pay</p>
-          <p class="qr-upi-id">hostelwifi@kaivalyadhama</p>
-          <div class="field">
-            <label for="upi-id">Or enter UPI ID</label>
-            <input id="upi-id" type="text" placeholder="yourname@upi" autocomplete="off" />
-          </div>
-        </div>
-
-        <div class="pay-panel" id="panel-card" role="tabpanel" aria-labelledby="tab-card" hidden>
-          <div class="field">
-            <label for="card-number">Card number</label>
-            <input id="card-number" type="text" inputmode="numeric" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" autocomplete="off" />
-          </div>
-          <div class="field">
-            <label for="card-name">Name on card</label>
-            <input id="card-name" type="text" placeholder="Cardholder name" autocomplete="off" />
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label for="card-expiry">Expiry</label>
-              <input id="card-expiry" type="text" placeholder="MM/YY" maxlength="5" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="card-cvv">CVV</label>
-              <input id="card-cvv" type="password" inputmode="numeric" placeholder="•••" maxlength="4" autocomplete="off" />
-            </div>
-          </div>
-        </div>
-
-        <div class="pay-panel" id="panel-net" role="tabpanel" aria-labelledby="tab-net" hidden>
-          <div class="field">
-            <label for="bank-select">Select your bank</label>
-            <select id="bank-select">
-              <option value="">Choose bank</option>
-              <option>State Bank of India</option>
-              <option>HDFC Bank</option>
-              <option>ICICI Bank</option>
-              <option>Axis Bank</option>
-              <option>Bank of Baroda</option>
-              <option>Kotak Mahindra Bank</option>
-            </select>
-          </div>
-          <p class="qr-hint" style="text-align:left;margin-top:4px;">You will be redirected to your bank’s secure page (demo).</p>
-        </div>
-
-        <div class="cta">
-          <button type="button" class="btn" id="btn-confirm-pay">Confirm &amp; Pay ₹499</button>
-          <p class="secure-note">
+          <button type="button" class="btn" id="btn-pay">Pay ₹499</button>
+          <p class="secure-note" style="justify-content:center;margin-top:10px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            256-bit SSL · Razorpay Test Mode
+            Secured by Razorpay Test Mode
           </p>
+          <p class="fine">By continuing you agree to Kaivalyadhama hostel network fair-usage policy.</p>
         </div>
 
         <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
@@ -2407,6 +2280,6 @@
   </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script type="module" src="js/portal-app.js?v=2.1"></script>
+  <script type="module" src="js/portal-app.js?v=2.2"></script>
 </body>
 </html>

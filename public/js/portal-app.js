@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=2.1";
+} from "./auth-service.js?v=2.2";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,19 +18,16 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=2.1";
+} from "./user-service.js?v=2.2";
 import {
   RAZORPAY_KEY_ID,
   RAZORPAY_CONFIG,
   assertRazorpayKey,
-} from "./razorpay-config.js?v=2.1";
+} from "./razorpay-config.js?v=2.2";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
-const payMethods = Array.from(document.querySelectorAll(".pay-method"));
 const btnPay = document.getElementById("btn-pay");
-const btnConfirmPay = document.getElementById("btn-confirm-pay");
-const btnGatewayBack = document.getElementById("btn-gateway-back");
 const btnRestart = document.getElementById("btn-restart");
 const btnConnect = document.getElementById("btn-connect");
 const btnDashToggle = document.getElementById("btn-dash-toggle");
@@ -39,17 +36,10 @@ const btnDashLogout = document.getElementById("btn-dash-logout");
 const screens = {
   auth: document.getElementById("screen-auth"),
   plans: document.getElementById("screen-plans"),
-  gateway: document.getElementById("screen-gateway"),
   processing: document.getElementById("screen-processing"),
   success: document.getElementById("screen-success"),
   dashboard: document.getElementById("screen-dashboard"),
 };
-
-const steps = [
-  document.getElementById("step-1"),
-  document.getElementById("step-2"),
-  document.getElementById("step-3"),
-];
 
 const accountBar = document.getElementById("account-bar");
 const accountEmail = document.getElementById("account-email");
@@ -84,7 +74,6 @@ let duration = {
   label: "1 Month",
 };
 
-let paymentMethod = "upi";
 let uploadedDoc = null;
 
 const docDrop = document.getElementById("doc-drop");
@@ -147,15 +136,6 @@ function clearPlanUiSelection() {
       String(Number(btn.dataset.months) === INITIAL_DURATION.months)
     );
   });
-  payMethods.forEach((btn) => {
-    const isUpi = btn.dataset.method === "upi";
-    btn.setAttribute("aria-selected", String(isUpi));
-  });
-  document.querySelectorAll(".pay-panel").forEach((panel) => {
-    const active = panel.id === "panel-upi";
-    panel.classList.toggle("active", active);
-    panel.hidden = !active;
-  });
 }
 
 function clearActivePlanDisplays() {
@@ -201,7 +181,7 @@ function clearActivePlanDisplays() {
 
   btnConnect.textContent = "Connect to Network";
   btnConnect.disabled = false;
-  btnConfirmPay.disabled = false;
+  if (btnPay) btnPay.disabled = false;
   btnRestart.textContent = "Log out";
 
   document.querySelectorAll(".copy-btn").forEach((btn) => {
@@ -221,7 +201,6 @@ function resetClientState({ clearAuthFields = true } = {}) {
   authMode = "login";
   selected = { ...INITIAL_SELECTED };
   duration = { ...INITIAL_DURATION };
-  paymentMethod = "upi";
   clearUploadedDoc();
   if (clearAuthFields) clearAuthForm();
   clearPlanUiSelection();
@@ -239,7 +218,6 @@ function wipePreviousSessionState() {
   sessionUid = null;
   selected = { ...INITIAL_SELECTED };
   duration = { ...INITIAL_DURATION };
-  paymentMethod = "upi";
   clearUploadedDoc();
   clearPlanUiSelection();
   clearActivePlanDisplays();
@@ -717,8 +695,6 @@ function updatePricingUI() {
 
   document.getElementById("summary-detail").textContent = detail;
   document.getElementById("summary-total").textContent = formatINR(quote.total);
-  document.getElementById("gateway-plan").textContent = detail;
-  document.getElementById("gateway-total").textContent = formatINR(quote.total);
 
   const wasSummary = document.getElementById("summary-was");
   const savingsChip = document.getElementById("savings-chip");
@@ -732,8 +708,7 @@ function updatePricingUI() {
     savingsChip.classList.remove("visible");
   }
 
-  btnPay.textContent = "Proceed to Pay " + formatINR(quote.total);
-  btnConfirmPay.textContent = "Confirm & Pay " + formatINR(quote.total);
+  btnPay.textContent = "Pay " + formatINR(quote.total);
 }
 
 async function persistSelectedPlan() {
@@ -779,18 +754,6 @@ async function selectDuration(btn) {
   await persistSelectedPlan();
 }
 
-function selectPayMethod(btn) {
-  paymentMethod = btn.dataset.method;
-  payMethods.forEach((t) => t.setAttribute("aria-selected", "false"));
-  btn.setAttribute("aria-selected", "true");
-
-  document.querySelectorAll(".pay-panel").forEach((panel) => {
-    const active = panel.id === "panel-" + paymentMethod;
-    panel.classList.toggle("active", active);
-    panel.hidden = !active;
-  });
-}
-
 function randomCreds() {
   const n = String(Math.floor(1000 + Math.random() * 9000));
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -806,19 +769,6 @@ function randomCreds() {
 
 function validUntil(months) {
   return formatValidUntil(validUntilDate(months));
-}
-
-function resetSteps() {
-  steps.forEach((s, i) => {
-    s.classList.remove("active", "done");
-    if (i === 0) s.classList.add("active");
-  });
-}
-
-function methodLabel() {
-  if (paymentMethod === "card") return "card";
-  if (paymentMethod === "net") return "net banking";
-  return "UPI";
 }
 
 function amountToPaise(amountInr) {
@@ -857,7 +807,6 @@ async function finalizeSuccessfulPayment({ planPayload, quote, razorpayResponse 
     amount: planPayload.amount,
     currency: "INR",
     method: "razorpay",
-    paymentMethodPreference: paymentMethod,
     documentName: uploadedDoc ? uploadedDoc.name : null,
     transactionId: paymentId,
     razorpayPaymentId: paymentId,
@@ -911,8 +860,7 @@ async function finalizeSuccessfulPayment({ planPayload, quote, razorpayResponse 
   renderActivePlanView({ fromPayment: true });
   updateAccountBar();
   showScreen("success");
-  btnConfirmPay.disabled = false;
-  btnPay.disabled = false;
+  if (btnPay) btnPay.disabled = false;
 }
 
 /**
@@ -946,7 +894,6 @@ async function startRazorpayCheckout() {
     return;
   }
 
-  btnConfirmPay.disabled = true;
   btnPay.disabled = true;
 
   try {
@@ -993,7 +940,6 @@ async function startRazorpayCheckout() {
     modal: {
       ondismiss() {
         void recordPaymentFailure("cancelled");
-        btnConfirmPay.disabled = false;
         btnPay.disabled = false;
       },
     },
@@ -1006,7 +952,6 @@ async function startRazorpayCheckout() {
       }).catch((error) => {
         console.error(error);
         alert(friendlyFirestoreError(error));
-        btnConfirmPay.disabled = false;
         btnPay.disabled = false;
       });
     },
@@ -1045,21 +990,14 @@ async function startRazorpayCheckout() {
         "Payment failed. Please try again.";
       void recordPaymentFailure(desc);
       alert(desc);
-      btnConfirmPay.disabled = false;
       btnPay.disabled = false;
     });
     rzp.open();
   } catch (error) {
     console.error(error);
     alert("Could not open Razorpay checkout. Please try again.");
-    btnConfirmPay.disabled = false;
     btnPay.disabled = false;
   }
-}
-
-/** @deprecated kept as alias — payment now goes through Razorpay */
-async function runPayment() {
-  await startRazorpayCheckout();
 }
 
 plans.forEach((btn) => {
@@ -1086,10 +1024,6 @@ durationTabs.forEach((btn) => {
   });
 });
 
-payMethods.forEach((btn) => {
-  btn.addEventListener("click", () => selectPayMethod(btn));
-});
-
 btnPay.addEventListener("click", async () => {
   if (!currentUser) {
     showScreen("auth");
@@ -1099,19 +1033,8 @@ btnPay.addEventListener("click", async () => {
   if (!requireDocument()) return;
   await persistSelectedPlan();
   updatePricingUI();
-  showScreen("gateway");
-});
-
-btnGatewayBack.addEventListener("click", () => {
-  showScreen("plans");
-});
-
-btnConfirmPay.addEventListener("click", () => {
-  if (!currentUser) {
-    showScreen("auth");
-    return;
-  }
-  startRazorpayCheckout();
+  // Open official Razorpay Checkout modal directly (no in-app checkout page).
+  await startRazorpayCheckout();
 });
 
 btnRestart.addEventListener("click", () => {
