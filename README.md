@@ -18,6 +18,20 @@ firebase.json        # Hosting rewrite: /api/** → function api
 firestore.rules
 ```
 
+## Razorpay credentials
+
+This is a **static Firebase Hosting** app (not Vite/Next), so browser env prefixes
+like `VITE_` / `NEXT_PUBLIC_` do not apply.
+
+1. Put keys in root `.env` (gitignored):
+   ```
+   RAZORPAY_KEY_ID=rzp_test_...
+   RAZORPAY_KEY_SECRET=...
+   ```
+2. Run `npm run sync:razorpay-env` — copies Key ID only into `public/js/env.js`
+   and syncs `functions/.env` for the API.
+3. Never put Key Secret in `public/`.
+
 ## Razorpay Standard Checkout flow
 
 1. User clicks **Pay** on the plans screen.

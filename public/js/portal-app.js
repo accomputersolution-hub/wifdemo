@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=2.6";
+} from "./auth-service.js?v=2.7";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,14 +18,16 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=2.6";
+} from "./user-service.js?v=2.7";
 import {
   RAZORPAY_CONFIG,
+  RAZORPAY_KEY_ID,
+  RAZORPAY_KEY_FINGERPRINT,
   createOrderOrFallback,
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
-} from "./razorpay-config.js?v=2.6";
+} from "./razorpay-config.js?v=2.7";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -960,9 +962,22 @@ async function startRazorpayCheckout() {
 
   const order = checkout.order;
   const requireVerify = checkout.mode === "standard";
+  const checkoutKey = order.key_id || RAZORPAY_KEY_ID;
+
+  if (!checkoutKey || !String(checkoutKey).startsWith("rzp_")) {
+    btnPay.disabled = false;
+    alert("Razorpay Key ID is missing. Run npm run sync:razorpay-env and redeploy.");
+    return;
+  }
+
+  console.info(
+    "[Razorpay] opening checkout with",
+    RAZORPAY_KEY_FINGERPRINT || checkoutKey.slice(0, 12) + "…",
+    "mode=" + checkout.mode
+  );
 
   const options = {
-    key: order.key_id,
+    key: checkoutKey,
     amount: order.amount,
     currency: "INR",
     name: RAZORPAY_CONFIG.name,

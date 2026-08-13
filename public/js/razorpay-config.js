@@ -2,14 +2,16 @@
  * Razorpay checkout helpers.
  *
  * KEY_SECRET never belongs in the browser.
- * When /api/create-order is available (local API or Cloud Functions on Blaze),
- * Standard Checkout with order_id + HMAC verify is used.
- * On Hosting without Functions (404), checkout falls back to Key ID + amount.
+ * Public Key ID comes from js/env.js (generated from root .env via
+ * `npm run sync:razorpay-env`). Backend uses process.env.RAZORPAY_*.
  */
 
-/** Public Test Key ID only (never the Key Secret). */
-export const RAZORPAY_KEY_ID = "rzp_test_TPMuvhl2PkGtjZ";
+import {
+  RAZORPAY_KEY_ID,
+  RAZORPAY_KEY_FINGERPRINT,
+} from "./env.js?v=2.7";
 
+export { RAZORPAY_KEY_ID, RAZORPAY_KEY_FINGERPRINT };
 /** Theme / merchant display for Razorpay Checkout modal */
 export const RAZORPAY_CONFIG = {
   name: "Kaivalyadhama Hostel Wi‑Fi",
