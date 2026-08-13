@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=3.2";
+} from "./auth-service.js?v=3.3";
 import {
   getUserDocument,
   saveSelectedPlan,
@@ -18,7 +18,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=3.2";
+} from "./user-service.js?v=3.3";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -27,7 +27,8 @@ import {
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
-} from "./razorpay-config.js?v=3.2";
+  normalizeIndiaMobile,
+} from "./razorpay-config.js?v=3.3";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -645,7 +646,73 @@ async function routeAfterAuth() {
 
   syncPlanSelectionFromUserDoc();
   updatePricingUI();
+  hydrateCheckoutContactFields();
   showScreen("plans");
+}
+
+function hydrateCheckoutContactFields() {
+  const emailEl = document.getElementById("checkout-email");
+  const mobileEl = document.getElementById("checkout-mobile");
+  const errEl = document.getElementById("checkout-contact-error");
+  if (errEl) {
+    errEl.textContent = "";
+    errEl.classList.remove("visible");
+  }
+
+  if (emailEl && !emailEl.value.trim()) {
+    emailEl.value =
+      (currentUser && currentUser.email) ||
+      (userDoc && userDoc.email) ||
+      "";
+  }
+
+  if (mobileEl && !mobileEl.value.trim()) {
+    const stored =
+      (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) || "";
+    // Show 10-digit local form when stored as +91…
+    const digits = String(stored).replace(/\D/g, "");
+    if (digits.length === 12 && digits.startsWith("91")) {
+      mobileEl.value = digits.slice(2);
+    } else if (digits.length === 10) {
+      mobileEl.value = digits;
+    } else {
+      mobileEl.value = stored;
+    }
+  }
+}
+
+function readCheckoutContactFromForm() {
+  const emailEl = document.getElementById("checkout-email");
+  const mobileEl = document.getElementById("checkout-mobile");
+  const errEl = document.getElementById("checkout-contact-error");
+
+  const userEmail = emailEl ? emailEl.value.trim() : "";
+  const userMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : "");
+
+  if (errEl) {
+    errEl.textContent = "";
+    errEl.classList.remove("visible");
+  }
+
+  if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
+    if (errEl) {
+      errEl.textContent = "Enter a valid email for checkout.";
+      errEl.classList.add("visible");
+    }
+    if (emailEl) emailEl.focus();
+    return null;
+  }
+
+  if (!userMobile) {
+    if (errEl) {
+      errEl.textContent = "Enter a valid 10-digit Indian mobile number.";
+      errEl.classList.add("visible");
+    }
+    if (mobileEl) mobileEl.focus();
+    return null;
+  }
+
+  return { userEmail, userMobile };
 }
 
 function syncPlanSelectionFromUserDoc() {
@@ -987,6 +1054,14 @@ async function startRazorpayCheckout() {
     "mode=" + checkout.mode
   );
 
+  // Capture exact email + mobile from the checkout form (never hardcode contact).
+  const contactFields = readCheckoutContactFromForm();
+  if (!contactFields) {
+    btnPay.disabled = false;
+    return;
+  }
+  const { userEmail, userMobile } = contactFields;
+
   const options = {
     key: checkoutKey,
     amount: order.amount,
@@ -994,12 +1069,10 @@ async function startRazorpayCheckout() {
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
     image: "assets/kaivalyadhama-logo.png",
-    // Land on domestic Indian methods (UPI first); never force international cards.
     prefill: buildDomesticPrefill({
       name: currentUser.displayName || "",
-      email: currentUser.email || "",
-      contact:
-        (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) || "",
+      email: userEmail,
+      contact: userMobile,
     }),
     notes: {
       planId: planPayload.id,
@@ -1095,6 +1168,7 @@ btnPay.addEventListener("click", async () => {
     return;
   }
   if (!requireDocument()) return;
+  if (!readCheckoutContactFromForm()) return;
   await persistSelectedPlan();
   updatePricingUI();
   // Open official Razorpay Checkout modal directly (no in-app checkout page).

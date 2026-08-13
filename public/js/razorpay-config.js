@@ -9,7 +9,7 @@
 import {
   RAZORPAY_KEY_ID,
   RAZORPAY_KEY_FINGERPRINT,
-} from "./env.js?v=3.2";
+} from "./env.js?v=3.3";
 
 export { RAZORPAY_KEY_ID, RAZORPAY_KEY_FINGERPRINT };
 /** Theme / merchant display for Razorpay Checkout modal */
@@ -52,19 +52,23 @@ export function getDomesticCheckoutConfig() {
 }
 
 /**
- * Prefill for domestic INR checkout. Defaults method to UPI when email+contact exist.
- * Contact is normalized to +91… so Checkout does not treat the payer as international.
+ * Build Razorpay prefill from the checkout form values only.
+ * Never invents or hardcodes a phone number.
+ *
+ * @param {{ name?: string, email?: string, contact?: string }} input
+ * @returns {{ name?: string, email: string, contact: string, method?: string }}
  */
 export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {}) {
+  const userEmail = String(email || "").trim();
+  const userMobile = normalizeIndiaMobile(contact);
+
   const prefill = {
-    name: name || "",
-    email: email || "",
+    email: userEmail,
+    contact: userMobile,
   };
 
-  const normalized = normalizeIndiaMobile(contact);
-  if (normalized) {
-    prefill.contact = normalized;
-  }
+  const trimmedName = String(name || "").trim();
+  if (trimmedName) prefill.name = trimmedName;
 
   // Razorpay: prefill.method works only when email AND contact are set.
   if (prefill.email && prefill.contact) {
@@ -74,13 +78,14 @@ export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {
   return prefill;
 }
 
-function normalizeIndiaMobile(raw) {
+/** Normalize to +91XXXXXXXXXX for Razorpay contact prefill. */
+export function normalizeIndiaMobile(raw) {
   if (!raw) return "";
   const digits = String(raw).replace(/\D/g, "");
-  if (digits.length === 10) return `+91${digits}`;
-  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  if (digits.length === 10) return "+91" + digits;
+  if (digits.length === 12 && digits.startsWith("91")) return "+" + digits;
   if (digits.length > 12 && digits.startsWith("91")) {
-    return `+${digits.slice(0, 12)}`;
+    return "+" + digits.slice(0, 12);
   }
   return "";
 }

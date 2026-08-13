@@ -2034,6 +2034,36 @@
           <p class="doc-error" id="doc-error" role="alert"></p>
         </div>
 
+        <div class="checkout-contact" id="checkout-contact">
+          <p class="section-label">Checkout contact</p>
+          <p class="doc-upload-hint" style="margin-bottom:10px;">These details are sent to Razorpay as your payment prefill.</p>
+          <div class="field">
+            <label for="checkout-email">Email</label>
+            <input
+              id="checkout-email"
+              name="checkout-email"
+              type="email"
+              autocomplete="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="checkout-mobile">Mobile number</label>
+            <input
+              id="checkout-mobile"
+              name="checkout-mobile"
+              type="tel"
+              inputmode="numeric"
+              autocomplete="tel"
+              placeholder="10-digit Indian mobile"
+              maxlength="15"
+              required
+            />
+          </div>
+          <p class="doc-error" id="checkout-contact-error" role="alert"></p>
+        </div>
+
         <div class="trust">
           <span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -2292,6 +2322,6 @@
   </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script type="module" src="js/portal-app.js?v=3.2"></script>
+  <script type="module" src="js/portal-app.js?v=3.3"></script>
 </body>
 </html>
