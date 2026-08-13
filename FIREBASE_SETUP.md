@@ -1,54 +1,75 @@
-# Firebase setup (Kaivalyadhama Hostel Wi‑Fi Portal)
+# Firebase setup & Hosting deploy
 
-This portal uses the **Firebase Web SDK v12 modular API** (CDN imports, no bundler required).
+This portal uses the **Firebase Web SDK v12 modular API** and is configured for **Firebase Hosting**.
 
-## File structure
+## Project layout (Hosting-ready)
 
 ```
-index.html                 # UI (auth + plans + payment)
-js/
-  firebase.js              # ← PASTE YOUR CONFIG KEYS HERE
-  auth-service.js          # login / signup / logout
-  user-service.js          # Firestore users/{uid} helpers
-  portal-app.js            # UI wiring + plan save / activate
-firestore.rules            # starter security rules
+firebase.json              # Hosting + Firestore deploy config
+.firebaserc                # Default project: hostel-wifi-160db
+firestore.rules            # Security rules for users/{uid}
+public/                    # ← Hosting public directory
+  index.html
+  assets/
+  js/
+    firebase.js            # ← Web app config lives here
+    auth-service.js
+    user-service.js
+    portal-app.js
 ```
 
-## 1. Paste your Firebase config keys
+## 1. Firebase web config
 
-Open **`js/firebase.js`** and replace the placeholders:
+Open **`public/js/firebase.js`** and confirm your web app keys are set
+(Firebase Console → Project settings → Your apps → Web → Config).
 
-```js
-export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-};
-```
-
-Get these values from:
-
-**Firebase Console → Project settings → Your apps → Web app → SDK setup and configuration → Config**
-
-## 2. Enable Firebase products
-
-In the Firebase Console for your project:
+## 2. Enable products in Firebase Console
 
 1. **Authentication → Sign-in method → Email/Password → Enable**
-2. **Firestore Database → Create database** (start in test mode for local demo, then deploy rules)
-3. Deploy or paste the rules from `firestore.rules`
+2. **Firestore Database → Create database**
+3. **Authentication → Settings → Authorized domains**  
+   After first Hosting deploy, ensure these are listed:
+   - `hostel-wifi-160db.web.app`
+   - `hostel-wifi-160db.firebaseapp.com`
+   - `localhost` (for local testing)
 
-## 3. Run the portal over HTTP
-
-ES modules cannot load reliably from `file://`. Serve the folder:
+## 3. Local preview
 
 ```bash
-python3 -m http.server 8080
-# then open http://localhost:8080
+# From repo root
+python3 -m http.server 8080 --directory public
+# open http://localhost:8080
 ```
+
+Or with Firebase tools:
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase serve --only hosting
+```
+
+## 4. Deploy to Firebase Hosting
+
+```bash
+npm install -g firebase-tools   # once
+firebase login                  # once
+firebase use hostel-wifi-160db
+firebase deploy
+```
+
+Useful variants:
+
+```bash
+firebase deploy --only hosting
+firebase deploy --only firestore:rules
+firebase deploy --only hosting,firestore:rules
+```
+
+After deploy, open:
+
+- https://hostel-wifi-160db.web.app  
+- https://hostel-wifi-160db.firebaseapp.com  
 
 ## What gets stored in Firestore
 
@@ -62,11 +83,12 @@ Collection: **`users`**, document ID = Firebase Auth `uid`
 | `transactionStatus` | `none` → `selected` → `pending` → `active` |
 | `lastTransaction` | Amount, method, paid status |
 
-Selecting a plan (e.g. 50 Mbps) writes `selectedPlan` + `transactionStatus: "selected"`.  
-Successful checkout sets `activePlan` and `transactionStatus: "active"`.
+## Pre-deploy checklist
 
-## UI behavior
-
-- Logged out → login / signup screen
-- Logged in → account bar shows email + active/selected plan + Log out
-- Proceed to Pay requires login + ID document upload
+- [ ] `public/js/firebase.js` has real `apiKey` / `projectId` / `appId`
+- [ ] Email/Password auth is enabled
+- [ ] Firestore database exists
+- [ ] `firebase.json` → `"public": "public"` (already set)
+- [ ] SPA rewrite → `**` → `/index.html` (already set)
+- [ ] You are logged in: `firebase login`
+- [ ] Correct project: `firebase use` shows `hostel-wifi-160db`

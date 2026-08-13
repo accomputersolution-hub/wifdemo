@@ -1,13 +1,13 @@
 /**
  * Central Firebase initialization (modular Web SDK v9+).
  *
- * WHERE TO PASTE YOUR KEYS:
- * Replace every "YOUR_..." placeholder below with values from
- * Firebase Console → Project settings → Your apps → Web app → Config.
+ * Web app config for project hostel-wifi-160db.
+ * Update values from Firebase Console → Project settings → Your apps → Web.
  *
  * Also enable in the Firebase Console:
  * - Authentication → Sign-in method → Email/Password
  * - Firestore Database → Create database
+ * - Authentication → Authorized domains (Hosting URLs after deploy)
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
@@ -15,12 +15,12 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-aut
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyAfpa63EqIaO0TYBCrk9y-BWPWDoFraXzo",
+  authDomain: "hostel-wifi-160db.firebaseapp.com",
+  projectId: "hostel-wifi-160db",
+  storageBucket: "hostel-wifi-160db.firebasestorage.app",
+  messagingSenderId: "372215574372",
+  appId: "1:372215574372:web:2f5424506214f71c38d471",
   // Optional:
   // measurementId: "YOUR_MEASUREMENT_ID",
 };

@@ -1,24 +1,38 @@
 # Kaivalyadhama Hostel Wi‑Fi Portal
 
-Static captive-portal demo with **Firebase Authentication** + **Cloud Firestore** (modular Web SDK).
+Static captive-portal demo with **Firebase Authentication**, **Cloud Firestore**, and **Firebase Hosting**.
 
-## Quick start
+## Layout
 
-1. Paste your Firebase web config into [`js/firebase.js`](js/firebase.js)  
-   (see [`FIREBASE_SETUP.md`](FIREBASE_SETUP.md) for the exact steps).
-2. Enable **Email/Password** auth and create a **Firestore** database.
-3. Serve the project over HTTP:
-
-```bash
-python3 -m http.server 8080
+```
+public/           # Deployed by Firebase Hosting
+  index.html
+  js/
+  assets/
+firebase.json     # Hosting public dir + SPA rewrites
+.firebaserc       # Project: hostel-wifi-160db
+firestore.rules
 ```
 
-4. Open `http://localhost:8080`
+## Quick start (local)
 
-## Features
+```bash
+python3 -m http.server 8080 --directory public
+```
 
-- Login / signup (Firebase Auth)
-- User profile document in `users/{uid}`
-- Plan selection saved to the signed-in user’s Firestore document
-- Account bar shows login state + active plan
-- Existing pricing UI, ID upload, and demo payment flow
+Open `http://localhost:8080`
+
+## Deploy
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase deploy --only hosting,firestore:rules
+```
+
+Live URLs (after deploy):
+
+- https://hostel-wifi-160db.web.app
+- https://hostel-wifi-160db.firebaseapp.com
+
+Full checklist: [`FIREBASE_SETUP.md`](FIREBASE_SETUP.md)
