@@ -26,7 +26,7 @@
       --gold-glow: rgba(56, 168, 255, 0.42);
       --text: #f2f7ff;
       --text-muted: #9db0c9;
-      --text-dim: #6b7f99;
+      --text-dim: #8fa3bd;
       --success: #3dcf7a;
       --success-glow: rgba(61, 207, 122, 0.35);
       --border: rgba(56, 168, 255, 0.32);
@@ -128,7 +128,7 @@
     /* Brand */
     .brand {
       text-align: center;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
       animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
@@ -136,28 +136,30 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      width: min(72vw, 196px);
-      height: min(72vw, 196px);
-      margin: 0 auto 18px;
-      padding: 10%;
+      width: min(34vw, 112px);
+      height: min(34vw, 112px);
+      margin: 0 auto 12px;
+      padding: 5%;
       border-radius: 50%;
       overflow: hidden;
       background:
-        radial-gradient(circle at 35% 28%, rgba(56, 168, 255, 0.22), transparent 55%),
+        radial-gradient(circle at 35% 28%, rgba(56, 168, 255, 0.2), transparent 55%),
         linear-gradient(160deg, #0a1628 0%, #02060f 100%);
       box-shadow:
-        0 0 0 2px rgba(56, 168, 255, 0.55),
-        0 0 0 6px rgba(56, 168, 255, 0.12),
-        0 14px 36px rgba(0, 0, 0, 0.55),
-        0 0 40px rgba(37, 99, 235, 0.28);
+        0 0 0 1.5px rgba(56, 168, 255, 0.55),
+        0 0 0 4px rgba(56, 168, 255, 0.1),
+        0 10px 24px rgba(0, 0, 0, 0.45),
+        0 0 28px rgba(37, 99, 235, 0.22);
     }
 
     .brand-logo-img {
       display: block;
-      width: 100%;
-      height: 100%;
+      width: 118%;
+      height: 118%;
+      max-width: none;
       object-fit: contain;
       object-position: center;
+      transform: translateY(1px);
     }
 
     .brand-divider {
@@ -166,8 +168,8 @@
       justify-content: center;
       gap: 10px;
       width: 100%;
-      max-width: 220px;
-      margin: 14px auto 14px;
+      max-width: 180px;
+      margin: 8px auto 10px;
     }
 
     .brand-divider span {
@@ -835,7 +837,7 @@
       padding-top: 20px;
       text-align: center;
       font-size: 0.68rem;
-      color: var(--text-dim);
+      color: var(--text-muted);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -1724,8 +1726,8 @@
 
     .auth-note {
       margin-top: 14px;
-      font-size: 0.72rem;
-      color: var(--text-dim);
+      font-size: 0.74rem;
+      color: var(--text-muted);
       line-height: 1.45;
       text-align: center;
     }
