@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=4.7";
+} from "./auth-service.js?v=4.5";
 import {
   getUserDocument,
   saveUserMobile,
@@ -19,7 +19,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=4.7";
+} from "./user-service.js?v=4.5";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -29,7 +29,7 @@ import {
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.7";
+} from "./razorpay-config.js?v=4.5";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -97,6 +97,10 @@ const docRemove = document.getElementById("doc-remove");
 const MAX_DOC_BYTES = 5 * 1024 * 1024;
 const ALLOWED_DOC_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const ALLOWED_DOC_EXTS = [".pdf", ".jpg", ".jpeg", ".png"];
+/** Razorpay domestic convenience fee passed to the customer (excl. GST). */
+const RAZORPAY_PLATFORM_FEE_RATE = 0.02;
+/** GST on Razorpay platform fee. */
+const GST_ON_PLATFORM_FEE_RATE = 0.18;
 
 const INITIAL_SELECTED = {
   id: "standard",
@@ -492,7 +496,7 @@ function isAllowedDoc(file) {
   return extOk && typeOk;
 }
 
-function clearUploadedDoc() {
+function clearUploadedDoc({ resetType = true } = {}) {
   uploadedDoc = null;
   docFileInput.value = "";
   docDrop.classList.remove("has-file");
@@ -501,23 +505,25 @@ function clearUploadedDoc() {
   docFileSize.textContent = "—";
   docDropTitle.textContent = "Tap to upload government ID";
   docDropSub.textContent = "Hostel / student ID not accepted";
-  const docType = document.getElementById("doc-id-type");
-  if (docType) docType.selectedIndex = 0;
+  if (resetType) {
+    const docType = document.getElementById("doc-id-type");
+    if (docType) docType.selectedIndex = 0;
+  }
   clearDocError();
 }
 
 function setUploadedDoc(file) {
   if (!file) {
-    clearUploadedDoc();
+    clearUploadedDoc({ resetType: false });
     return false;
   }
   if (!isAllowedDoc(file)) {
-    clearUploadedDoc();
+    clearUploadedDoc({ resetType: false });
     showDocError("Please upload a PDF, JPG, or PNG of a government ID.");
     return false;
   }
   if (file.size > MAX_DOC_BYTES) {
-    clearUploadedDoc();
+    clearUploadedDoc({ resetType: false });
     showDocError("File is too large. Maximum size is 5 MB.");
     return false;
   }
@@ -526,7 +532,7 @@ function setUploadedDoc(file) {
   if (
     /hostel|student\s*id|college\s*id|school\s*id|campus\s*id/.test(lowerName)
   ) {
-    clearUploadedDoc();
+    clearUploadedDoc({ resetType: false });
     showDocError(
       "Hostel ID and student ID are not allowed. Upload a government ID (Aadhaar, PAN, DL, Voter ID, or Passport)."
     );
@@ -573,9 +579,25 @@ function requireDocument() {
 
 function calcPricing(monthly) {
   const full = monthly * duration.months;
-  const total = monthly * duration.billable;
-  const savings = full - total;
-  return { monthly, full, total, savings };
+  const planTotal = monthly * duration.billable;
+  const savings = full - planTotal;
+
+  // Razorpay domestic fee passed to customer: 2% + 18% GST on that fee.
+  const platformFee = Math.round(planTotal * RAZORPAY_PLATFORM_FEE_RATE);
+  const feeGst = Math.round(platformFee * GST_ON_PLATFORM_FEE_RATE);
+  const platformFeeTotal = platformFee + feeGst;
+  const total = planTotal + platformFeeTotal;
+
+  return {
+    monthly,
+    full,
+    planTotal,
+    savings,
+    platformFee,
+    feeGst,
+    platformFeeTotal,
+    total,
+  };
 }
 
 function getQuote() {
@@ -592,6 +614,10 @@ function buildPlanPayload(quote = getQuote()) {
     billableMonths: duration.billable,
     freeMonths: duration.free,
     durationLabel: duration.label,
+    planAmount: quote.planTotal,
+    platformFee: quote.platformFee,
+    platformFeeGst: quote.feeGst,
+    platformFeeTotal: quote.platformFeeTotal,
     amount: quote.total,
     fullAmount: quote.full,
     savings: quote.savings,
@@ -961,12 +987,14 @@ function updatePricingUI() {
     const periodEl = btn.querySelector("[data-period]");
     const durLabel = btn.querySelector(".plan-duration-label");
 
-    amountEl.textContent = formatINR(p.total);
+    // Plan cards show plan price only; platform fee is shown in checkout summary.
     if (p.savings > 0) {
+      amountEl.textContent = formatINR(p.planTotal);
       wasEl.textContent = formatINR(p.full);
       wasEl.classList.add("visible");
       periodEl.textContent = "total · " + duration.label;
     } else {
+      amountEl.textContent = formatINR(p.monthly);
       wasEl.textContent = "";
       wasEl.classList.remove("visible");
       periodEl.textContent = "/month";
@@ -975,7 +1003,14 @@ function updatePricingUI() {
   });
 
   document.getElementById("summary-detail").textContent = detail;
+  document.getElementById("summary-plan-amount").textContent = formatINR(quote.planTotal);
+  document.getElementById("summary-platform-fee").textContent = formatINR(
+    quote.platformFee
+  );
+  document.getElementById("summary-fee-gst").textContent = formatINR(quote.feeGst);
   document.getElementById("summary-total").textContent = formatINR(quote.total);
+  const payTotalEl = document.getElementById("summary-pay-total");
+  if (payTotalEl) payTotalEl.textContent = formatINR(quote.total);
 
   const wasSummary = document.getElementById("summary-was");
   const savingsChip = document.getElementById("savings-chip");
@@ -1215,6 +1250,8 @@ async function startRazorpayCheckout() {
       currency: "INR",
       method: "razorpay",
       documentName: uploadedDoc ? uploadedDoc.name : null,
+      documentType:
+        (document.getElementById("doc-id-type") || {}).value || null,
       mode: "test",
     });
     userDoc = {
