@@ -29,7 +29,7 @@ import {
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.2";
+} from "./razorpay-config.js?v=4.3";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
