@@ -1554,6 +1554,15 @@ authToggleBtns.forEach((btn) => {
   btn.addEventListener("click", () => setAuthMode(btn.dataset.authMode));
 });
 
+// Support number: avoid href="tel:..." so Chrome autofill does not latch onto helpline.
+document.querySelectorAll("a.helpline[data-tel]").forEach((anchor) => {
+  anchor.addEventListener("click", (event) => {
+    event.preventDefault();
+    const tel = anchor.getAttribute("data-tel");
+    if (tel) window.location.href = "tel:" + tel;
+  });
+});
+
 authForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   showAuthError("");
