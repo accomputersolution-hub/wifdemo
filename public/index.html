@@ -256,13 +256,19 @@
 
     .duration-tabs {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 6px;
       padding: 5px;
       border-radius: 14px;
       background: rgba(6, 14, 28, 0.65);
       border: 1px solid var(--border-soft);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    @media (max-width: 420px) {
+      .duration-tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .duration-tab {
@@ -1859,6 +1865,19 @@
             >
               <span class="dur-label">1 Month</span>
               <span class="dur-hint">Regular price</span>
+            </button>
+            <button
+              type="button"
+              class="duration-tab"
+              role="radio"
+              aria-checked="false"
+              data-months="3"
+              data-billable="3"
+              data-free="0"
+              data-label="3 Months"
+            >
+              <span class="dur-label">3 Months</span>
+              <span class="dur-hint">No discount</span>
             </button>
             <button
               type="button"
