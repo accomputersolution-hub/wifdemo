@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=4.5";
+} from "./auth-service.js?v=4.7";
 import {
   getUserDocument,
   saveUserMobile,
@@ -19,7 +19,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=4.5";
+} from "./user-service.js?v=4.7";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -29,7 +29,7 @@ import {
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.5";
+} from "./razorpay-config.js?v=4.7";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -499,8 +499,10 @@ function clearUploadedDoc() {
   docFileMeta.classList.remove("visible");
   docFileName.textContent = "—";
   docFileSize.textContent = "—";
-  docDropTitle.textContent = "Tap to upload document";
-  docDropSub.textContent = "Required for network activation";
+  docDropTitle.textContent = "Tap to upload government ID";
+  docDropSub.textContent = "Hostel / student ID not accepted";
+  const docType = document.getElementById("doc-id-type");
+  if (docType) docType.selectedIndex = 0;
   clearDocError();
 }
 
@@ -511,12 +513,23 @@ function setUploadedDoc(file) {
   }
   if (!isAllowedDoc(file)) {
     clearUploadedDoc();
-    showDocError("Please upload a PDF, JPG, or PNG file.");
+    showDocError("Please upload a PDF, JPG, or PNG of a government ID.");
     return false;
   }
   if (file.size > MAX_DOC_BYTES) {
     clearUploadedDoc();
     showDocError("File is too large. Maximum size is 5 MB.");
+    return false;
+  }
+
+  const lowerName = String(file.name || "").toLowerCase();
+  if (
+    /hostel|student\s*id|college\s*id|school\s*id|campus\s*id/.test(lowerName)
+  ) {
+    clearUploadedDoc();
+    showDocError(
+      "Hostel ID and student ID are not allowed. Upload a government ID (Aadhaar, PAN, DL, Voter ID, or Passport)."
+    );
     return false;
   }
 
@@ -526,17 +539,31 @@ function setUploadedDoc(file) {
   docFileMeta.classList.add("visible");
   docFileName.textContent = file.name;
   docFileSize.textContent = formatFileSize(file.size);
-  docDropTitle.textContent = "Document ready";
+  docDropTitle.textContent = "Government ID ready";
   docDropSub.textContent = "You can replace this file anytime";
   return true;
 }
 
 function requireDocument() {
+  const docType = document.getElementById("doc-id-type");
+  const selectedType = docType ? String(docType.value || "").trim() : "";
+  if (!selectedType) {
+    showDocError("Select a government ID type (Aadhaar, PAN, DL, Voter ID, or Passport).");
+    if (docType) docType.focus();
+    document.getElementById("doc-upload").scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    return false;
+  }
+
   if (uploadedDoc) {
     clearDocError();
     return true;
   }
-  showDocError("Please upload your ID document before payment.");
+  showDocError(
+    "Upload a government ID before payment. Hostel ID and student ID are not accepted."
+  );
   document.getElementById("doc-upload").scrollIntoView({
     behavior: "smooth",
     block: "center",

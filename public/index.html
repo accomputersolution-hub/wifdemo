@@ -1770,7 +1770,7 @@
                         <img
               class="brand-logo-img"
               id="auth-logo-img"
-              src="assets/pcn-logo.png?v=4.6"
+              src="assets/pcn-logo.png?v=4.7"
               width="640"
               height="640"
               alt="PCN"
@@ -1834,7 +1834,7 @@
           <div class="brand-logo">
                         <img
               class="brand-logo-img"
-              src="assets/pcn-logo.png?v=4.6"
+              src="assets/pcn-logo.png?v=4.7"
               width="640"
               height="640"
               alt="PCN"
@@ -2035,8 +2035,19 @@
 
         <div class="doc-upload" id="doc-upload">
           <div class="doc-upload-head">
-            <p class="section-label">Upload ID document</p>
-            <p class="doc-upload-hint">Hostel ID, student ID, or Aadhaar (PDF / JPG / PNG · max 5 MB)</p>
+            <p class="section-label">Upload government ID</p>
+            <p class="doc-upload-hint">Only government IDs accepted: Aadhaar, PAN, Driving Licence, Voter ID, or Passport. Hostel ID / student ID not allowed. (PDF / JPG / PNG · max 5 MB)</p>
+          </div>
+          <div class="field" style="margin-bottom:12px;">
+            <label for="doc-id-type">ID type</label>
+            <select id="doc-id-type" name="doc-id-type" required>
+              <option value="" selected disabled>Select government ID</option>
+              <option value="aadhaar">Aadhaar</option>
+              <option value="pan">PAN card</option>
+              <option value="driving_licence">Driving licence</option>
+              <option value="voter_id">Voter ID</option>
+              <option value="passport">Passport</option>
+            </select>
           </div>
           <label class="doc-drop" id="doc-drop" for="doc-file">
             <input
@@ -2051,8 +2062,8 @@
               <path d="M12 18v-6"/>
               <path d="M9 15l3-3 3 3"/>
             </svg>
-            <span class="doc-drop-title" id="doc-drop-title">Tap to upload document</span>
-            <span class="doc-drop-sub" id="doc-drop-sub">Required for network activation</span>
+            <span class="doc-drop-title" id="doc-drop-title">Tap to upload government ID</span>
+            <span class="doc-drop-sub" id="doc-drop-sub">Hostel / student ID not accepted</span>
           </label>
           <div class="doc-file-meta" id="doc-file-meta" aria-live="polite">
             <div class="doc-file-info">
@@ -2352,6 +2363,6 @@
   </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script type="module" src="js/portal-app.js?v=4.6"></script>
+  <script type="module" src="js/portal-app.js?v=4.7"></script>
 </body>
 </html>
