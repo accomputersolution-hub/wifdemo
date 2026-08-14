@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=4.4";
+} from "./auth-service.js?v=4.5";
 import {
   getUserDocument,
   saveUserMobile,
@@ -19,7 +19,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=4.4";
+} from "./user-service.js?v=4.5";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -29,7 +29,7 @@ import {
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.4";
+} from "./razorpay-config.js?v=4.5";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -126,14 +126,31 @@ function clearBrowserStorage() {
 }
 
 /**
- * Razorpay Checkout remembers the last contact on this site (partitioned cookies /
- * local keys). Same browser + new signup then still shows helpline / blank mobile
- * until the user clears site data — unless we wipe what we can and force prefill.
+ * Razorpay Checkout (esp. Chrome) remembers last contact via:
+ * - localStorage: razorpay_prefill_data_v1, rzp_device_id, rzp_stored_checkout_id
+ * - cookie: rzp_unified_session_id
+ * Clear these + reload checkout.js so a new signup cannot inherit helpline.
  */
 function clearRazorpayClientMemory() {
+  const knownKeys = [
+    "razorpay_prefill_data_v1",
+    "rzp_stored_checkout_id",
+    "rzp_device_id",
+    "rzp_unified_session_id",
+    "customerAccessToken",
+    "sessionId",
+  ];
   const match = /razorpay|rzp_|rzp-|checkout/i;
-  const purge = (storage) => {
+
+  const purgeStorage = (storage) => {
     if (!storage) return;
+    knownKeys.forEach((key) => {
+      try {
+        storage.removeItem(key);
+      } catch (_) {
+        /* ignore */
+      }
+    });
     const keys = [];
     for (let i = 0; i < storage.length; i++) {
       const key = storage.key(i);
@@ -149,40 +166,86 @@ function clearRazorpayClientMemory() {
   };
 
   try {
-    purge(window.localStorage);
+    purgeStorage(window.localStorage);
   } catch (_) {
     /* ignore */
   }
   try {
-    purge(window.sessionStorage);
+    purgeStorage(window.sessionStorage);
   } catch (_) {
     /* ignore */
   }
 
+  const expireCookie = (name) => {
+    const expires = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    const host = window.location.hostname;
+    const variants = [
+      `${name}=; ${expires}; path=/`,
+      `${name}=; ${expires}; path=/; SameSite=Lax`,
+      `${name}=; ${expires}; path=/; SameSite=None; Secure`,
+      `${name}=; ${expires}; path=/; domain=${host}`,
+      `${name}=; ${expires}; path=/; domain=${host}; SameSite=Lax`,
+      `${name}=; ${expires}; path=/; domain=.${host}`,
+    ];
+    variants.forEach((value) => {
+      try {
+        document.cookie = value;
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  };
+
   try {
+    expireCookie("rzp_unified_session_id");
     document.cookie.split(";").forEach((part) => {
       const name = part.split("=")[0].trim();
-      if (!name || !match.test(name)) return;
-      document.cookie =
-        name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
-      document.cookie =
-        name +
-        "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=" +
-        window.location.hostname +
-        "; SameSite=Lax";
+      if (name && match.test(name)) expireCookie(name);
     });
   } catch (_) {
     /* ignore */
   }
+}
 
-  // Drop any prior Checkout instance hooks if the SDK exposed them.
+/**
+ * Chrome keeps Razorpay SDK + session in memory; reload checkout.js so prefill
+ * from this Pay click wins over the previous account's remembered contact.
+ */
+function reloadRazorpaySdk() {
+  clearRazorpayClientMemory();
+
+  document
+    .querySelectorAll('script[src*="checkout.razorpay.com"]')
+    .forEach((node) => {
+      try {
+        node.remove();
+      } catch (_) {
+        /* ignore */
+      }
+    });
+
   try {
-    if (window.Razorpay && typeof window.Razorpay === "function") {
-      /* fresh `new Razorpay(options)` is created per Pay click */
-    }
+    delete window.Razorpay;
   } catch (_) {
-    /* ignore */
+    try {
+      window.Razorpay = undefined;
+    } catch (__) {
+      /* ignore */
+    }
   }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src =
+      "https://checkout.razorpay.com/v1/checkout.js?ts=" + Date.now();
+    script.async = true;
+    script.onload = () => {
+      if (typeof window.Razorpay === "function") resolve();
+      else reject(new Error("Razorpay SDK missing after reload"));
+    };
+    script.onerror = () => reject(new Error("Failed to reload Razorpay SDK"));
+    document.head.appendChild(script);
+  });
 }
 
 function clearCheckoutContactFields() {
@@ -1220,7 +1283,18 @@ async function startRazorpayCheckout() {
   );
 
   // Wipe remembered Razorpay contact from earlier accounts in this browser.
-  clearRazorpayClientMemory();
+  // Chrome keeps a stronger session than Firefox — reload SDK before open.
+  try {
+    await reloadRazorpaySdk();
+  } catch (error) {
+    console.warn("Razorpay SDK reload failed, continuing with existing SDK:", error);
+    clearRazorpayClientMemory();
+    if (typeof window.Razorpay !== "function") {
+      btnPay.disabled = false;
+      alert("Razorpay checkout failed to load. Please refresh and try again.");
+      return;
+    }
+  }
 
   const options = {
     key: checkoutKey,
@@ -1245,6 +1319,7 @@ async function startRazorpayCheckout() {
       name: true,
     },
     remember_customer: false,
+    personalization: false,
     notes: {
       planId: planPayload.id,
       planName: planPayload.name,
