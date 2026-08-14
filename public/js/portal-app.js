@@ -1088,7 +1088,7 @@ async function startRazorpayCheckout() {
     currency: "INR",
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
-    image: "assets/kaivalyadhama-logo.png",
+    image: "assets/pcn-logo.png",
     prefill: {
       email: userEmail,
       contact: userMobile,
