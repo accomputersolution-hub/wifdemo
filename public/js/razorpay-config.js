@@ -103,10 +103,8 @@ export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {
   const trimmedName = String(name || "").trim();
   if (trimmedName) prefill.name = trimmedName;
 
-  // Razorpay: prefill.method works only when email AND contact are set.
-  if (prefill.email && prefill.contact) {
-    prefill.method = "upi";
-  }
+  // Do not set prefill.method here — forcing UPI can skip/break the contact
+  // modal binding when Razorpay still has a remembered customer on this site.
 
   return prefill;
 }
