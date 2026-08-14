@@ -1135,24 +1135,67 @@
     .field select {
       width: 100%;
       appearance: none;
-      border: 1px solid var(--border-soft);
-      background: rgba(6, 14, 28, 0.55);
+      -webkit-appearance: none;
+      border: 1px solid rgba(56, 168, 255, 0.28);
+      background: linear-gradient(180deg, rgba(12, 40, 78, 0.95), rgba(6, 14, 28, 0.98));
       color: var(--text);
       font-family: var(--font-sans);
       font-size: 0.95rem;
       padding: 12px 14px;
       border-radius: 10px;
       outline: none;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .field input:focus,
     .field select:focus {
-      border-color: var(--gold);
+      border-color: var(--gold-bright);
+      box-shadow: 0 0 0 3px rgba(56, 168, 255, 0.18);
     }
 
     .field input::placeholder {
       color: var(--text-dim);
+    }
+
+    .select-wrap {
+      position: relative;
+    }
+
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--gold-bright);
+      border-bottom: 2px solid var(--gold-bright);
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .field-select select {
+      padding-right: 36px;
+      cursor: pointer;
+      color: var(--text);
+      background-color: #0a1628;
+    }
+
+    .field-select select option,
+    .field-select select optgroup {
+      background-color: #0a1628;
+      color: #f2f7ff;
+    }
+
+    .field-select select option:checked,
+    .field-select select option:hover {
+      background-color: #1f6feb;
+      color: #ffffff;
+    }
+
+    .price-summary-pay {
+      margin-top: 4px;
+      margin-bottom: 12px;
     }
 
     .field-row {
@@ -1817,7 +1860,7 @@
                         <img
               class="brand-logo-img"
               id="auth-logo-img"
-              src="assets/pcn-logo.png?v=4.8"
+              src="assets/pcn-logo.png?v=4.9"
               width="640"
               height="640"
               alt="PCN"
@@ -1881,7 +1924,7 @@
           <div class="brand-logo">
                         <img
               class="brand-logo-img"
-              src="assets/pcn-logo.png?v=4.8"
+              src="assets/pcn-logo.png?v=4.9"
               width="640"
               height="640"
               alt="PCN"
@@ -2066,10 +2109,73 @@
           </button>
         </div>
 
-        <div class="price-summary" aria-live="polite">
+        <div class="savings-chip" id="savings-chip" aria-live="polite">
+          You save <span id="savings-amount">₹0</span> with this duration
+        </div>
+
+        <div class="doc-upload" id="doc-upload">
+          <div class="doc-upload-head">
+            <p class="section-label">Upload government ID</p>
+            <p class="doc-upload-hint">Only government IDs accepted: Aadhaar, PAN, Driving Licence, Voter ID, or Passport. Hostel ID / student ID not allowed. (PDF / JPG / PNG · max 5 MB)</p>
+          </div>
+          <div class="field field-select" style="margin-bottom:12px;">
+            <label for="doc-id-type">ID type</label>
+            <div class="select-wrap">
+              <select id="doc-id-type" name="doc-id-type" required>
+                <option value="" selected disabled>Select government ID</option>
+                <option value="aadhaar">Aadhaar</option>
+                <option value="pan">PAN card</option>
+                <option value="driving_licence">Driving licence</option>
+                <option value="voter_id">Voter ID</option>
+                <option value="passport">Passport</option>
+              </select>
+            </div>
+          </div>
+          <label class="doc-drop" id="doc-drop" for="doc-file">
+            <input
+              type="file"
+              id="doc-file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              aria-describedby="doc-error"
+            />
+            <svg class="doc-drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <path d="M12 18v-6"/>
+              <path d="M9 15l3-3 3 3"/>
+            </svg>
+            <span class="doc-drop-title" id="doc-drop-title">Tap to upload government ID</span>
+            <span class="doc-drop-sub" id="doc-drop-sub">Hostel / student ID not accepted</span>
+          </label>
+          <div class="doc-file-meta" id="doc-file-meta" aria-live="polite">
+            <div class="doc-file-info">
+              <span class="doc-file-name" id="doc-file-name">—</span>
+              <span class="doc-file-size" id="doc-file-size">—</span>
+            </div>
+            <button type="button" class="doc-remove" id="doc-remove">Remove</button>
+          </div>
+          <p class="doc-error" id="doc-error" role="alert"></p>
+        </div>
+
+        <div class="trust">
+          <span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            UPI Secure
+          </span>
+          <span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            MAC Bound
+          </span>
+          <span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Instant Access
+          </span>
+        </div>
+
+        <div class="price-summary price-summary-pay" aria-live="polite">
           <div class="price-summary-top">
             <div class="price-summary-left">
-              <p class="ps-label">Total payable</p>
+              <p class="ps-label">Payment summary</p>
               <p class="ps-detail" id="summary-detail">30 Mbps Standard · 1 Month</p>
             </div>
             <div class="price-summary-right">
@@ -2098,96 +2204,6 @@
               Platform fee is Razorpay’s payment processing charge, shown separately before you pay.
             </p>
           </div>
-        </div>
-        <div class="savings-chip" id="savings-chip" aria-live="polite">
-          You save <span id="savings-amount">₹0</span> with this duration
-        </div>
-
-        <div class="doc-upload" id="doc-upload">
-          <div class="doc-upload-head">
-            <p class="section-label">Upload government ID</p>
-            <p class="doc-upload-hint">Only government IDs accepted: Aadhaar, PAN, Driving Licence, Voter ID, or Passport. Hostel ID / student ID not allowed. (PDF / JPG / PNG · max 5 MB)</p>
-          </div>
-          <div class="field" style="margin-bottom:12px;">
-            <label for="doc-id-type">ID type</label>
-            <select id="doc-id-type" name="doc-id-type" required>
-              <option value="" selected disabled>Select government ID</option>
-              <option value="aadhaar">Aadhaar</option>
-              <option value="pan">PAN card</option>
-              <option value="driving_licence">Driving licence</option>
-              <option value="voter_id">Voter ID</option>
-              <option value="passport">Passport</option>
-            </select>
-          </div>
-          <label class="doc-drop" id="doc-drop" for="doc-file">
-            <input
-              type="file"
-              id="doc-file"
-              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-              aria-describedby="doc-error"
-            />
-            <svg class="doc-drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <path d="M12 18v-6"/>
-              <path d="M9 15l3-3 3 3"/>
-            </svg>
-            <span class="doc-drop-title" id="doc-drop-title">Tap to upload government ID</span>
-            <span class="doc-drop-sub" id="doc-drop-sub">Hostel / student ID not accepted</span>
-          </label>
-          <div class="doc-file-meta" id="doc-file-meta" aria-live="polite">
-            <div class="doc-file-info">
-              <span class="doc-file-name" id="doc-file-name">—</span>
-              <span class="doc-file-size" id="doc-file-size">—</span>
-            </div>
-            <button type="button" class="doc-remove" id="doc-remove">Remove</button>
-          </div>
-          <p class="doc-error" id="doc-error" role="alert"></p>
-        </div>
-
-        <div class="checkout-contact" id="checkout-contact">
-          <p class="section-label">Checkout contact</p>
-          <p class="doc-upload-hint" style="margin-bottom:10px;">These details are sent to Razorpay as your payment prefill.</p>
-          <div class="field">
-            <label for="checkout-email">Email</label>
-            <input
-              id="checkout-email"
-              name="checkout-email"
-              type="email"
-              autocomplete="email"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div class="field">
-            <label for="checkout-mobile">Mobile number</label>
-            <input
-              id="checkout-mobile"
-              name="checkout-mobile"
-              type="tel"
-              inputmode="numeric"
-              autocomplete="off"
-              placeholder="10-digit Indian mobile"
-              maxlength="10"
-              required
-            />
-          </div>
-          <p class="doc-error" id="checkout-contact-error" role="alert"></p>
-        </div>
-
-        <div class="trust">
-          <span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            UPI Secure
-          </span>
-          <span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            MAC Bound
-          </span>
-          <span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            Instant Access
-          </span>
         </div>
 
         <div class="cta">
@@ -2433,6 +2449,6 @@
   </div>
 
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script type="module" src="js/portal-app.js?v=4.8"></script>
+  <script type="module" src="js/portal-app.js?v=4.9"></script>
 </body>
 </html>

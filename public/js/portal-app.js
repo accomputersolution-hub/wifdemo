@@ -253,15 +253,7 @@ function reloadRazorpaySdk() {
 }
 
 function clearCheckoutContactFields() {
-  const emailEl = document.getElementById("checkout-email");
-  const mobileEl = document.getElementById("checkout-mobile");
-  const errEl = document.getElementById("checkout-contact-error");
-  if (emailEl) emailEl.value = "";
-  if (mobileEl) mobileEl.value = "";
-  if (errEl) {
-    errEl.textContent = "";
-    errEl.classList.remove("visible");
-  }
+  // Checkout contact fields removed — email/mobile come from signup/login profile.
 }
 
 function toCheckoutMobileDisplay(raw) {
@@ -853,35 +845,7 @@ async function routeAfterAuth() {
 }
 
 function hydrateCheckoutContactFields() {
-  const emailEl = document.getElementById("checkout-email");
-  const mobileEl = document.getElementById("checkout-mobile");
-  const errEl = document.getElementById("checkout-contact-error");
-  if (errEl) {
-    errEl.textContent = "";
-    errEl.classList.remove("visible");
-  }
-
-  const emailFromProfile =
-    (currentUser && currentUser.email) ||
-    (userDoc && userDoc.email) ||
-    pendingContact.email ||
-    "";
-  const mobileFromProfile =
-    (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) ||
-    pendingContact.mobile ||
-    "";
-  const safeMobile = normalizeIndiaMobile(mobileFromProfile);
-
-  if (emailEl) {
-    emailEl.value = emailFromProfile || emailEl.value.trim();
-  }
-
-  if (mobileEl) {
-    const display = toCheckoutMobileDisplay(safeMobile || mobileFromProfile);
-    if (display) {
-      mobileEl.value = display;
-    }
-  }
+  // No checkout contact form — contact is resolved from auth/profile at Pay time.
 }
 
 /**
@@ -902,42 +866,33 @@ async function fetchUserDocumentAfterAuth(uid) {
 }
 
 /**
- * Read Checkout Contact fields strictly from the live inputs.
- * Mobile comes only from #checkout-mobile — no profile/helpline fallback.
+ * Resolve Razorpay prefill from signup/login profile (no duplicate checkout form).
  */
-function readCheckoutContactFromForm() {
-  const emailEl = document.getElementById("checkout-email");
-  const mobileEl = document.getElementById("checkout-mobile");
-  const errEl = document.getElementById("checkout-contact-error");
+function resolveCheckoutContact() {
+  const userEmail =
+    (currentUser && currentUser.email) ||
+    (userDoc && userDoc.email) ||
+    pendingContact.email ||
+    "";
+  const mobileRaw =
+    (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) ||
+    pendingContact.mobile ||
+    "";
+  const userMobile = normalizeIndiaMobile(mobileRaw);
 
-  const userEmail = emailEl ? String(emailEl.value || "").trim() : "";
-  // Exact value typed in the mobile input (normalized to +91… for Razorpay).
-  const userMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : "");
-
-  if (errEl) {
-    errEl.textContent = "";
-    errEl.classList.remove("visible");
-  }
-
-  if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
-    if (errEl) {
-      errEl.textContent = "Enter a valid email for checkout.";
-      errEl.classList.add("visible");
-    }
-    if (emailEl) emailEl.focus();
+  if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(userEmail).trim())) {
+    alert("Account email is missing. Please log out and sign up / log in again.");
     return null;
   }
 
   if (!userMobile) {
-    if (errEl) {
-      errEl.textContent = "Enter a valid 10-digit Indian mobile number.";
-      errEl.classList.add("visible");
-    }
-    if (mobileEl) mobileEl.focus();
+    alert(
+      "Account mobile is missing. Please log out and sign up again with a valid 10-digit mobile number."
+    );
     return null;
   }
 
-  return { userEmail, userMobile };
+  return { userEmail: String(userEmail).trim(), userMobile };
 }
 
 function syncPlanSelectionFromUserDoc() {
@@ -1197,33 +1152,12 @@ async function startRazorpayCheckout() {
     return;
   }
 
-  // Strictly from Checkout Contact inputs — no hardcoded phone in this trigger.
-  const emailEl = document.getElementById("checkout-email");
-  const mobileEl = document.getElementById("checkout-mobile");
-  const userEmail = emailEl ? String(emailEl.value || "").trim() : "";
-  const userMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : "");
+  // Prefill from signup/login profile — checkout contact form removed.
+  const contact = resolveCheckoutContact();
+  if (!contact) return;
+  const { userEmail, userMobile } = contact;
 
-  if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userEmail)) {
-    const errEl = document.getElementById("checkout-contact-error");
-    if (errEl) {
-      errEl.textContent = "Enter a valid email for checkout.";
-      errEl.classList.add("visible");
-    }
-    if (emailEl) emailEl.focus();
-    return;
-  }
-
-  if (!userMobile) {
-    const errEl = document.getElementById("checkout-contact-error");
-    if (errEl) {
-      errEl.textContent = "Enter a valid 10-digit Indian mobile number.";
-      errEl.classList.add("visible");
-    }
-    if (mobileEl) mobileEl.focus();
-    return;
-  }
-
-  // Keep profile mobile in sync so the next visit auto-fills checkout.
+  // Keep profile mobile in sync for future visits.
   try {
     await saveUserMobile(currentUser.uid, userMobile);
     if (userDoc) userDoc = { ...userDoc, mobile: userMobile };
@@ -1247,6 +1181,10 @@ async function startRazorpayCheckout() {
       planId: planPayload.id,
       planName: planPayload.name,
       amount: planPayload.amount,
+      planAmount: planPayload.planAmount,
+      platformFee: planPayload.platformFee,
+      platformFeeGst: planPayload.platformFeeGst,
+      platformFeeTotal: planPayload.platformFeeTotal,
       currency: "INR",
       method: "razorpay",
       documentName: uploadedDoc ? uploadedDoc.name : null,
@@ -1318,23 +1256,18 @@ async function startRazorpayCheckout() {
     return;
   }
 
-  // Re-read contact at open time so Razorpay never gets a stale/helpline value.
-  const liveEmail = emailEl ? String(emailEl.value || "").trim() : userEmail;
-  const liveMobileRaw = mobileEl ? mobileEl.value : userMobile;
+  // Build Razorpay prefill from account profile contact.
   const prefill = buildDomesticPrefill({
     name: (currentUser && currentUser.displayName) || (userDoc && userDoc.displayName) || "",
-    email: liveEmail || userEmail,
-    contact: liveMobileRaw || userMobile,
+    email: userEmail,
+    contact: userMobile,
   });
 
-  if (!prefill.contact) {
+  if (!prefill.contact || !prefill.email) {
     btnPay.disabled = false;
-    const errEl = document.getElementById("checkout-contact-error");
-    if (errEl) {
-      errEl.textContent = "Enter a valid 10-digit Indian mobile number (not the support helpline).";
-      errEl.classList.add("visible");
-    }
-    if (mobileEl) mobileEl.focus();
+    alert(
+      "Account email or mobile is missing. Please log out and sign up / log in again."
+    );
     return;
   }
 
@@ -1485,7 +1418,7 @@ btnPay.addEventListener("click", async () => {
     return;
   }
   if (!requireDocument()) return;
-  if (!readCheckoutContactFromForm()) return;
+  if (!resolveCheckoutContact()) return;
   await persistSelectedPlan();
   updatePricingUI();
   // Open official Razorpay Checkout modal directly (no in-app checkout page).
