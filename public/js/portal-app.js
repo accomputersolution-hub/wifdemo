@@ -27,8 +27,9 @@ import {
   createOrderOrFallback,
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
+  buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.1";
+} from "./razorpay-config.js?v=4.2";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -692,13 +693,14 @@ function hydrateCheckoutContactFields() {
     (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) ||
     pendingContact.mobile ||
     "";
+  const safeMobile = normalizeIndiaMobile(mobileFromProfile);
 
   if (emailEl) {
     emailEl.value = emailFromProfile || emailEl.value.trim();
   }
 
   if (mobileEl) {
-    const display = toCheckoutMobileDisplay(mobileFromProfile);
+    const display = toCheckoutMobileDisplay(safeMobile || mobileFromProfile);
     if (display) {
       mobileEl.value = display;
     }
@@ -1136,30 +1138,54 @@ async function startRazorpayCheckout() {
     "prefill.email=" + userEmail
   );
 
+  // Re-read contact at open time so Razorpay never gets a stale/helpline value.
+  const liveEmail = emailEl ? String(emailEl.value || "").trim() : userEmail;
+  const liveMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : userMobile);
+  const prefill = buildDomesticPrefill({
+    name: (currentUser && currentUser.displayName) || (userDoc && userDoc.displayName) || "",
+    email: liveEmail || userEmail,
+    contact: liveMobile || userMobile,
+  });
+
+  if (!prefill.contact) {
+    btnPay.disabled = false;
+    const errEl = document.getElementById("checkout-contact-error");
+    if (errEl) {
+      errEl.textContent = "Enter a valid 10-digit Indian mobile number (not the support helpline).";
+      errEl.classList.add("visible");
+    }
+    if (mobileEl) mobileEl.focus();
+    return;
+  }
+
   const options = {
     key: checkoutKey,
     amount: order.amount,
     currency: "INR",
     name: RAZORPAY_CONFIG.name,
     description: planPayload.name + " · " + planPayload.durationLabel,
-    image: "assets/pcn-logo.png",
-    prefill: {
-      email: userEmail,
-      contact: userMobile,
-      name: (currentUser && currentUser.displayName) || "",
-      method: "upi",
+    image: new URL("assets/pcn-logo.png", window.location.href).href,
+    prefill,
+    // Lock identity to checkout-form values (blocks Razorpay "remembered" helpline customer).
+    readonly: {
+      email: true,
+      contact: true,
+      name: true,
     },
+    remember_customer: false,
     notes: {
       planId: planPayload.id,
       planName: planPayload.name,
       uid: currentUser.uid,
       durationLabel: planPayload.durationLabel,
-      portal: "kaivalyadhama-hostel-wifi",
+      portal: "pcn-hostel-wifi",
       mode: checkout.mode === "standard" ? "test-standard" : "test-fallback",
       market: "IN",
+      customerMobile: prefill.contact,
+      customerEmail: prefill.email,
     },
     theme: {
-      color: RAZORPAY_CONFIG.themeColor || "#7a1a32",
+      color: RAZORPAY_CONFIG.themeColor || "#1f6feb",
     },
     config: getDomesticCheckoutConfig(),
     modal: {

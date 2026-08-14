@@ -15,9 +15,9 @@ export { RAZORPAY_KEY_ID, RAZORPAY_KEY_FINGERPRINT };
 
 /** Theme / merchant display for Razorpay Checkout modal */
 export const RAZORPAY_CONFIG = {
-  name: "Kaivalyadhama Hostel Wi‑Fi",
+  name: "PCN Hostel Wi‑Fi",
   currency: "INR",
-  themeColor: "#7a1a32",
+  themeColor: "#1f6feb",
   testMode: true,
 };
 
@@ -52,20 +52,26 @@ export function getDomesticCheckoutConfig() {
   };
 }
 
+/** Hostel support number — never use as Razorpay customer prefill. */
+export const HELPLINE_MOBILE_DIGITS = "9322752851";
+
 /**
  * Normalize to +91XXXXXXXXXX for Razorpay `prefill.contact`.
- * Returns "" when the value is missing/invalid.
+ * Returns "" when the value is missing/invalid/helpline.
  * Never substitutes any static phone number.
  */
 export function normalizeIndiaMobile(raw) {
   if (!raw) return "";
   const digits = String(raw).replace(/\D/g, "");
-  if (digits.length === 10) return "+91" + digits;
-  if (digits.length === 12 && digits.startsWith("91")) return "+" + digits;
-  if (digits.length > 12 && digits.startsWith("91")) {
-    return "+" + digits.slice(0, 12);
-  }
-  return "";
+  let local = "";
+  if (digits.length === 10) local = digits;
+  else if (digits.length === 12 && digits.startsWith("91")) local = digits.slice(2);
+  else if (digits.length > 12 && digits.startsWith("91")) local = digits.slice(2, 12);
+  else return "";
+
+  if (local === HELPLINE_MOBILE_DIGITS) return "";
+  if (!/^[6-9]\d{9}$/.test(local)) return "";
+  return "+91" + local;
 }
 
 /**
