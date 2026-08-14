@@ -8,9 +8,10 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=3.6";
+} from "./auth-service.js?v=4.1";
 import {
   getUserDocument,
+  saveUserMobile,
   saveSelectedPlan,
   markTransactionPending,
   markTransactionFailed,
@@ -18,7 +19,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=3.6";
+} from "./user-service.js?v=4.1";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -27,7 +28,7 @@ import {
   verifyPaymentOrSkip,
   getDomesticCheckoutConfig,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=3.6";
+} from "./razorpay-config.js?v=4.1";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -62,6 +63,8 @@ const authSubtitle = document.getElementById("auth-subtitle");
 let currentUser = null;
 let userDoc = null;
 let authMode = "login";
+/** Holds email/mobile from the auth form until Firestore doc is ready. */
+let pendingContact = { email: "", mobile: "" };
 /** Tracks which Firebase uid the in-memory session belongs to. */
 let sessionUid = null;
 
@@ -119,6 +122,27 @@ function clearBrowserStorage() {
   } catch (error) {
     console.warn("Could not clear sessionStorage:", error);
   }
+}
+
+function clearCheckoutContactFields() {
+  const emailEl = document.getElementById("checkout-email");
+  const mobileEl = document.getElementById("checkout-mobile");
+  const errEl = document.getElementById("checkout-contact-error");
+  if (emailEl) emailEl.value = "";
+  if (mobileEl) mobileEl.value = "";
+  if (errEl) {
+    errEl.textContent = "";
+    errEl.classList.remove("visible");
+  }
+}
+
+function toCheckoutMobileDisplay(raw) {
+  const normalized = normalizeIndiaMobile(raw);
+  if (normalized) return normalized.replace(/^\+91/, "");
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  return "";
 }
 
 function clearAuthForm() {
@@ -223,11 +247,13 @@ function wipePreviousSessionState() {
   currentUser = null;
   userDoc = null;
   sessionUid = null;
+  // Keep pendingContact — signup mobile must survive Auth recreate / uid switch.
   selected = { ...INITIAL_SELECTED };
   duration = { ...INITIAL_DURATION };
   clearUploadedDoc();
   clearPlanUiSelection();
   clearActivePlanDisplays();
+  clearCheckoutContactFields();
 }
 
 /**
@@ -240,8 +266,10 @@ async function performLogout() {
   } catch (error) {
     console.error("Firebase signOut failed:", error);
   } finally {
+    pendingContact = { email: "", mobile: "" };
     clearBrowserStorage();
     resetClientState({ clearAuthFields: true });
+    clearCheckoutContactFields();
     setAuthMode("login");
     showScreen("auth");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -655,25 +683,43 @@ function hydrateCheckoutContactFields() {
     errEl.classList.remove("visible");
   }
 
-  if (emailEl && !emailEl.value.trim()) {
-    emailEl.value =
-      (currentUser && currentUser.email) ||
-      (userDoc && userDoc.email) ||
-      "";
+  const emailFromProfile =
+    (currentUser && currentUser.email) ||
+    (userDoc && userDoc.email) ||
+    pendingContact.email ||
+    "";
+  const mobileFromProfile =
+    (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) ||
+    pendingContact.mobile ||
+    "";
+
+  if (emailEl) {
+    emailEl.value = emailFromProfile || emailEl.value.trim();
   }
 
-  if (mobileEl && !mobileEl.value.trim()) {
-    const stored =
-      (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) || "";
-    const digits = String(stored).replace(/\D/g, "");
-    if (digits.length === 12 && digits.startsWith("91")) {
-      mobileEl.value = digits.slice(2);
-    } else if (digits.length === 10) {
-      mobileEl.value = digits;
-    } else if (stored) {
-      mobileEl.value = stored;
+  if (mobileEl) {
+    const display = toCheckoutMobileDisplay(mobileFromProfile);
+    if (display) {
+      mobileEl.value = display;
     }
   }
+}
+
+/**
+ * Auth listener can fire before signup finishes writing users/{uid}.
+ * Retry briefly so mobile/email from signup are available for checkout.
+ */
+async function fetchUserDocumentAfterAuth(uid) {
+  let doc = await getUserDocument(uid);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const hasMobile = !!(doc && (doc.mobile || doc.phone || doc.contact));
+    if (doc && (hasMobile || !pendingContact.mobile)) {
+      return doc;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    doc = await getUserDocument(uid);
+  }
+  return doc;
 }
 
 /**
@@ -987,6 +1033,14 @@ async function startRazorpayCheckout() {
     }
     if (mobileEl) mobileEl.focus();
     return;
+  }
+
+  // Keep profile mobile in sync so the next visit auto-fills checkout.
+  try {
+    await saveUserMobile(currentUser.uid, userMobile);
+    if (userDoc) userDoc = { ...userDoc, mobile: userMobile };
+  } catch (error) {
+    console.warn("Could not save checkout mobile to profile:", error);
   }
 
   const quote = getQuote();
@@ -1342,8 +1396,19 @@ authForm.addEventListener("submit", async (e) => {
     return;
   }
 
+  // Remember contact before Auth recreate wipes form fields / session.
+  pendingContact = {
+    email,
+    mobile: mobile || "",
+  };
+
   // Drop any previous in-memory session before creating/signing into an account.
   wipePreviousSessionState();
+  // wipe clears checkout fields — restore pending after wipe.
+  pendingContact = {
+    email,
+    mobile: mobile || "",
+  };
   updateAccountBar();
 
   authSubmit.disabled = true;
@@ -1396,7 +1461,7 @@ watchAuthState(async (user) => {
   userDoc = null;
 
   try {
-    userDoc = await getUserDocument(user.uid);
+    userDoc = await fetchUserDocumentAfterAuth(user.uid);
     // Guard: never keep a doc that doesn't belong to this uid.
     if (userDoc && userDoc.uid && userDoc.uid !== user.uid) {
       console.warn("Discarding mismatched user document for uid", user.uid);
@@ -1405,6 +1470,20 @@ watchAuthState(async (user) => {
     if (userDoc && userDoc.id && userDoc.id !== user.uid) {
       console.warn("Discarding user document with mismatched id", user.uid);
       userDoc = null;
+    }
+
+    // If signup mobile hasn't landed in Firestore yet, persist it now.
+    const profileMobile = userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact);
+    if (!profileMobile && pendingContact.mobile) {
+      try {
+        await saveUserMobile(user.uid, pendingContact.mobile);
+        userDoc = {
+          ...(userDoc || { uid: user.uid, email: user.email || pendingContact.email || null }),
+          mobile: pendingContact.mobile,
+        };
+      } catch (saveError) {
+        console.warn("Could not persist signup mobile:", saveError);
+      }
     }
   } catch (error) {
     console.error(error);

@@ -83,6 +83,23 @@ export async function getUserDocument(uid) {
 }
 
 /**
+ * Persist mobile captured at signup / checkout onto users/{uid}.
+ */
+export async function saveUserMobile(uid, mobile) {
+  const normalized = String(mobile || "").trim();
+  if (!uid || !normalized) return;
+  await setDoc(
+    userRef(uid),
+    {
+      uid,
+      mobile: normalized,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+/**
  * Called when the user selects a pricing plan in the UI.
  */
 export async function saveSelectedPlan(uid, planPayload) {
