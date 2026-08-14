@@ -29,7 +29,7 @@ import {
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.3";
+} from "./razorpay-config.js?v=4.2";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -1130,21 +1130,13 @@ async function startRazorpayCheckout() {
     return;
   }
 
-  console.info(
-    "[Razorpay] opening checkout with",
-    RAZORPAY_KEY_FINGERPRINT || checkoutKey.slice(0, 12) + "…",
-    "mode=" + checkout.mode,
-    "prefill.contact=" + userMobile,
-    "prefill.email=" + userEmail
-  );
-
   // Re-read contact at open time so Razorpay never gets a stale/helpline value.
   const liveEmail = emailEl ? String(emailEl.value || "").trim() : userEmail;
-  const liveMobile = normalizeIndiaMobile(mobileEl ? mobileEl.value : userMobile);
+  const liveMobileRaw = mobileEl ? mobileEl.value : userMobile;
   const prefill = buildDomesticPrefill({
     name: (currentUser && currentUser.displayName) || (userDoc && userDoc.displayName) || "",
     email: liveEmail || userEmail,
-    contact: liveMobile || userMobile,
+    contact: liveMobileRaw || userMobile,
   });
 
   if (!prefill.contact) {
@@ -1158,6 +1150,14 @@ async function startRazorpayCheckout() {
     return;
   }
 
+  console.info(
+    "[Razorpay] opening checkout with",
+    RAZORPAY_KEY_FINGERPRINT || checkoutKey.slice(0, 12) + "…",
+    "mode=" + checkout.mode,
+    "prefill.contact=" + prefill.contact,
+    "prefill.email=" + prefill.email
+  );
+
   const options = {
     key: checkoutKey,
     amount: order.amount,
@@ -1166,10 +1166,10 @@ async function startRazorpayCheckout() {
     description: planPayload.name + " · " + planPayload.durationLabel,
     image: new URL("assets/pcn-logo.png", window.location.href).href,
     prefill,
-    // Lock identity to checkout-form values (blocks Razorpay "remembered" helpline customer).
+    // Do not mark contact readonly — new Checkout contact modal needs to accept 10-digit prefill.
     readonly: {
       email: true,
-      contact: true,
+      contact: false,
       name: true,
     },
     remember_customer: false,

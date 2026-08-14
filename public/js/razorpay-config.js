@@ -56,11 +56,10 @@ export function getDomesticCheckoutConfig() {
 export const HELPLINE_MOBILE_DIGITS = "9322752851";
 
 /**
- * Normalize to +91XXXXXXXXXX for Razorpay `prefill.contact`.
- * Returns "" when the value is missing/invalid/helpline.
- * Never substitutes any static phone number.
+ * Extract a valid 10-digit Indian mobile (no country code).
+ * Returns "" when missing/invalid/helpline.
  */
-export function normalizeIndiaMobile(raw) {
+export function toIndiaMobile10(raw) {
   if (!raw) return "";
   const digits = String(raw).replace(/\D/g, "");
   let local = "";
@@ -71,19 +70,30 @@ export function normalizeIndiaMobile(raw) {
 
   if (local === HELPLINE_MOBILE_DIGITS) return "";
   if (!/^[6-9]\d{9}$/.test(local)) return "";
-  return "+91" + local;
+  return local;
+}
+
+/**
+ * Normalize to +91XXXXXXXXXX (storage / notes).
+ * Returns "" when the value is missing/invalid/helpline.
+ */
+export function normalizeIndiaMobile(raw) {
+  const local = toIndiaMobile10(raw);
+  return local ? "+91" + local : "";
 }
 
 /**
  * Build Razorpay `prefill` from the checkout form values only.
- * `contact` must be the mobile the user typed — no hardcoded phone.
+ * Contact is 10-digit (no +91) because Checkout's contact modal already
+ * shows a +91 country selector — sending +91XXXXXXXXXX leaves Mobile blank.
  *
  * @param {{ name?: string, email?: string, contact?: string }} input
  * @returns {{ name?: string, email: string, contact: string, method?: string }}
  */
 export function buildDomesticPrefill({ name = "", email = "", contact = "" } = {}) {
   const userEmail = String(email || "").trim();
-  const userMobile = normalizeIndiaMobile(contact);
+  // 10-digit for Razorpay Contact details UI (+91 is separate in the modal).
+  const userMobile = toIndiaMobile10(contact);
 
   const prefill = {
     email: userEmail,
