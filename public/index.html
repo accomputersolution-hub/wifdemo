@@ -3,31 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#2a0a12" />
+  <meta name="theme-color" content="#06101f" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Kaivalyadhama Hostel Wi‑Fi — Captive Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --maroon-deep: #1a060c;
-      --maroon: #5c1224;
-      --maroon-mid: #7a1a32;
-      --maroon-bright: #9b2440;
-      --maroon-soft: rgba(155, 36, 64, 0.22);
-      --gold: #c9a227;
-      --gold-bright: #e8c547;
-      --gold-pale: #f5e6b8;
-      --gold-muted: rgba(201, 162, 39, 0.16);
-      --gold-glow: rgba(201, 162, 39, 0.38);
-      --text: #faf6f0;
-      --text-muted: #c4b5a8;
-      --text-dim: #8a7a70;
+      /* PCN theme: deep navy + electric blue (legacy var names kept) */
+      --maroon-deep: #050a14;
+      --maroon: #0c2850;
+      --maroon-mid: #163d72;
+      --maroon-bright: #1f6feb;
+      --maroon-soft: rgba(37, 99, 235, 0.22);
+      --gold: #38a8ff;
+      --gold-bright: #7dd3ff;
+      --gold-pale: #d7f0ff;
+      --gold-muted: rgba(56, 168, 255, 0.16);
+      --gold-glow: rgba(56, 168, 255, 0.42);
+      --text: #f2f7ff;
+      --text-muted: #9db0c9;
+      --text-dim: #8fa3bd;
       --success: #3dcf7a;
       --success-glow: rgba(61, 207, 122, 0.35);
-      --border: rgba(201, 162, 39, 0.28);
-      --border-soft: rgba(255, 255, 255, 0.07);
-      --card-bg: linear-gradient(165deg, rgba(74, 18, 32, 0.92) 0%, rgba(32, 10, 16, 0.97) 100%);
+      --border: rgba(56, 168, 255, 0.32);
+      --border-soft: rgba(255, 255, 255, 0.08);
+      --card-bg: linear-gradient(165deg, rgba(12, 40, 78, 0.92) 0%, rgba(6, 14, 28, 0.97) 100%);
       --shadow-card: 0 18px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
       --radius: 16px;
       --font-sans: "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
@@ -60,10 +64,10 @@
       align-items: center;
       padding: 24px 18px calc(24px + var(--safe-bottom));
       background:
-        radial-gradient(ellipse 100% 50% at 50% -5%, rgba(155, 36, 64, 0.45), transparent 55%),
-        radial-gradient(ellipse 50% 40% at 100% 70%, rgba(201, 162, 39, 0.1), transparent 50%),
-        radial-gradient(ellipse 40% 30% at 0% 50%, rgba(92, 18, 36, 0.5), transparent 45%),
-        linear-gradient(180deg, #2a0a12 0%, #1a060c 55%, #120408 100%);
+        radial-gradient(ellipse 100% 50% at 50% -5%, rgba(37, 99, 235, 0.45), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 70%, rgba(56, 168, 255, 0.1), transparent 50%),
+        radial-gradient(ellipse 40% 30% at 0% 50%, rgba(15, 55, 110, 0.5), transparent 45%),
+        linear-gradient(180deg, #06101f 0%, #050a14 55%, #03060e 100%);
       overflow: hidden;
     }
 
@@ -72,8 +76,8 @@
       position: absolute;
       inset: 0;
       background-image:
-        linear-gradient(rgba(201, 162, 39, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(201, 162, 39, 0.04) 1px, transparent 1px);
+        linear-gradient(rgba(56, 168, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 168, 255, 0.04) 1px, transparent 1px);
       background-size: 44px 44px;
       mask-image: radial-gradient(ellipse 75% 55% at 50% 25%, black, transparent);
       pointer-events: none;
@@ -93,7 +97,7 @@
       height: 200px;
       top: -30px;
       right: -50px;
-      background: rgba(155, 36, 64, 0.45);
+      background: rgba(37, 99, 235, 0.45);
       animation: float 14s ease-in-out infinite;
     }
 
@@ -102,7 +106,7 @@
       height: 160px;
       bottom: 12%;
       left: -40px;
-      background: rgba(201, 162, 39, 0.14);
+      background: rgba(56, 168, 255, 0.14);
       animation: float 18s ease-in-out infinite reverse;
     }
 
@@ -124,72 +128,38 @@
     /* Brand */
     .brand {
       text-align: center;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
       animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
     .brand-logo {
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .logo-seal {
-      width: 96px;
-      height: 96px;
+      width: min(34vw, 112px);
+      height: min(34vw, 112px);
+      margin: 0 auto 12px;
+      padding: 5%;
       border-radius: 50%;
-      position: relative;
-      display: grid;
-      place-items: center;
+      overflow: hidden;
       background:
-        radial-gradient(circle at 35% 30%, rgba(232, 197, 71, 0.35), transparent 45%),
-        linear-gradient(160deg, #8b2038 0%, #4a0f1c 55%, #2a0a12 100%);
+        radial-gradient(circle at 35% 28%, rgba(56, 168, 255, 0.2), transparent 55%),
+        linear-gradient(160deg, #0a1628 0%, #02060f 100%);
       box-shadow:
-        0 0 0 2px rgba(245, 230, 184, 0.25),
-        0 0 0 5px rgba(201, 162, 39, 0.55),
-        0 0 0 7px rgba(90, 20, 35, 0.9),
-        0 12px 36px rgba(0, 0, 0, 0.45),
-        0 0 40px rgba(201, 162, 39, 0.22);
-      margin-bottom: 12px;
+        0 0 0 1.5px rgba(56, 168, 255, 0.55),
+        0 0 0 4px rgba(56, 168, 255, 0.1),
+        0 10px 24px rgba(0, 0, 0, 0.45),
+        0 0 28px rgba(37, 99, 235, 0.22);
     }
 
-    .logo-seal::before {
-      content: "";
-      position: absolute;
-      inset: 7px;
-      border-radius: 50%;
-      border: 1px dashed rgba(232, 197, 71, 0.45);
-      pointer-events: none;
-    }
-
-    .logo-seal svg {
-      width: 72px;
-      height: 72px;
+    .brand-logo-img {
       display: block;
-      position: relative;
-      z-index: 1;
-    }
-
-    .logo-wordmark {
-      font-family: var(--font-sans);
-      font-size: 1.2rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold-pale);
-      line-height: 1.1;
-      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-    }
-
-    .logo-tagline {
-      margin-top: 4px;
-      font-size: 0.65rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      opacity: 0.9;
+      width: 118%;
+      height: 118%;
+      max-width: none;
+      object-fit: contain;
+      object-position: center;
+      transform: translateY(1px);
     }
 
     .brand-divider {
@@ -198,14 +168,14 @@
       justify-content: center;
       gap: 10px;
       width: 100%;
-      max-width: 220px;
-      margin: 14px auto 14px;
+      max-width: 180px;
+      margin: 8px auto 10px;
     }
 
     .brand-divider span {
       flex: 1;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(201, 162, 39, 0.55), transparent);
+      background: linear-gradient(90deg, transparent, rgba(56, 168, 255, 0.55), transparent);
     }
 
     .brand-divider svg {
@@ -286,13 +256,19 @@
 
     .duration-tabs {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 6px;
       padding: 5px;
       border-radius: 14px;
-      background: rgba(20, 6, 10, 0.65);
+      background: rgba(6, 14, 28, 0.65);
       border: 1px solid var(--border-soft);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    @media (max-width: 420px) {
+      .duration-tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     .duration-tab {
@@ -315,9 +291,9 @@
     }
 
     .duration-tab[aria-checked="true"] {
-      background: linear-gradient(160deg, rgba(155, 36, 64, 0.85), rgba(74, 18, 32, 0.95));
+      background: linear-gradient(160deg, rgba(37, 99, 235, 0.85), rgba(12, 40, 78, 0.95));
       color: var(--text);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.35);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(56, 168, 255, 0.35);
     }
 
     .duration-tab .dur-label {
@@ -355,7 +331,7 @@
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #2a0a12;
+      color: #06101f;
       background: linear-gradient(90deg, var(--gold-bright), var(--gold));
       padding: 2px 7px;
       border-radius: 999px;
@@ -368,14 +344,20 @@
 
     .price-summary {
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      gap: 10px;
+      margin: -4px 0 14px;
+      padding: 14px 14px 12px;
+      border-radius: 12px;
+      background: rgba(56, 168, 255, 0.08);
+      border: 1px solid rgba(56, 168, 255, 0.22);
+    }
+
+    .price-summary-top {
+      display: flex;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin: -4px 0 14px;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: rgba(201, 162, 39, 0.08);
-      border: 1px solid rgba(201, 162, 39, 0.22);
     }
 
     .price-summary-left {
@@ -426,6 +408,47 @@
       display: block;
     }
 
+    .price-breakdown {
+      display: grid;
+      gap: 6px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(56, 168, 255, 0.18);
+    }
+
+    .price-breakdown-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .price-breakdown-row span:last-child {
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .price-breakdown-row.is-fee span:last-child {
+      color: var(--gold-bright);
+    }
+
+    .price-breakdown-row.is-total {
+      margin-top: 2px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(56, 168, 255, 0.22);
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .price-breakdown-note {
+      margin-top: 2px;
+      font-size: 0.68rem;
+      line-height: 1.35;
+      color: var(--text-dim);
+    }
+
     .savings-chip {
       display: none;
       align-items: center;
@@ -463,7 +486,7 @@
       font-family: var(--font-ui);
       color: var(--text);
       border-radius: 14px;
-      background: rgba(40, 12, 20, 0.75);
+      background: rgba(8, 22, 44, 0.75);
       padding: 14px 14px 14px 16px;
       display: grid;
       grid-template-columns: auto 1fr auto;
@@ -480,7 +503,7 @@
       inset: 0;
       border-radius: inherit;
       padding: 1px;
-      background: linear-gradient(135deg, rgba(201, 162, 39, 0.2), rgba(255, 255, 255, 0.04));
+      background: linear-gradient(135deg, rgba(56, 168, 255, 0.2), rgba(255, 255, 255, 0.04));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -491,7 +514,7 @@
 
     .plan:hover {
       transform: translateY(-1px);
-      background: rgba(58, 16, 28, 0.9);
+      background: rgba(10, 32, 62, 0.9);
     }
 
     .plan:focus-visible {
@@ -500,19 +523,19 @@
 
     .plan[aria-checked="true"] {
       background: var(--card-bg);
-      box-shadow: var(--shadow-card), 0 0 28px rgba(155, 36, 64, 0.25);
+      box-shadow: var(--shadow-card), 0 0 28px rgba(37, 99, 235, 0.25);
       transform: translateY(-1px);
     }
 
     .plan[aria-checked="true"]::before {
-      background: linear-gradient(145deg, rgba(232, 197, 71, 0.7), rgba(201, 162, 39, 0.15) 45%, rgba(155, 36, 64, 0.5));
+      background: linear-gradient(145deg, rgba(125, 211, 255, 0.7), rgba(56, 168, 255, 0.15) 45%, rgba(37, 99, 235, 0.5));
     }
 
     .plan-radio {
       width: 22px;
       height: 22px;
       border-radius: 50%;
-      border: 2px solid rgba(201, 162, 39, 0.4);
+      border: 2px solid rgba(56, 168, 255, 0.4);
       display: grid;
       place-items: center;
       flex-shrink: 0;
@@ -521,7 +544,7 @@
 
     .plan[aria-checked="true"] .plan-radio {
       border-color: var(--gold-bright);
-      background: rgba(201, 162, 39, 0.15);
+      background: rgba(56, 168, 255, 0.15);
     }
 
     .plan-radio::after {
@@ -608,7 +631,7 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: #3a1018;
+      color: #041018;
       background: linear-gradient(90deg, var(--gold-bright), var(--gold));
       padding: 4px 10px;
       border-radius: 999px;
@@ -618,6 +641,161 @@
     .plan.is-featured {
       margin-top: 6px;
       padding-top: 18px;
+    }
+
+    /* Document upload */
+    .doc-upload {
+      margin: 0 0 16px;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(6, 14, 28, 0.45);
+      border: 1px solid var(--border-soft);
+    }
+
+    .doc-upload-head {
+      margin-bottom: 10px;
+    }
+
+    .doc-upload-head .section-label {
+      margin-bottom: 4px;
+    }
+
+    .doc-upload-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .doc-drop {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 108px;
+      padding: 18px 14px;
+      border-radius: 12px;
+      border: 1.5px dashed rgba(56, 168, 255, 0.42);
+      background: rgba(56, 168, 255, 0.05);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      text-align: center;
+    }
+
+    .doc-drop:hover,
+    .doc-drop:focus-within,
+    .doc-drop.is-dragover {
+      border-color: var(--gold-bright);
+      background: rgba(56, 168, 255, 0.1);
+      box-shadow: 0 0 0 3px rgba(56, 168, 255, 0.12);
+    }
+
+    .doc-drop.has-file {
+      border-style: solid;
+      border-color: rgba(61, 207, 122, 0.45);
+      background: rgba(61, 207, 122, 0.08);
+    }
+
+    .doc-drop input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .doc-drop-icon {
+      width: 28px;
+      height: 28px;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .doc-drop.has-file .doc-drop-icon {
+      color: var(--success);
+    }
+
+    .doc-drop-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .doc-drop-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .doc-file-meta {
+      display: none;
+      margin-top: 10px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(12, 40, 78, 0.55);
+      border: 1px solid rgba(61, 207, 122, 0.28);
+    }
+
+    .doc-file-meta.visible {
+      display: flex;
+    }
+
+    .doc-file-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .doc-file-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-file-size {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .doc-remove {
+      appearance: none;
+      border: 1px solid var(--border-soft);
+      background: rgba(6, 14, 28, 0.55);
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .doc-remove:hover {
+      color: var(--gold-pale);
+      border-color: var(--border);
+    }
+
+    .doc-error {
+      display: none;
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: #ff8a9a;
+    }
+
+    .doc-error.visible {
+      display: block;
     }
 
     /* Trust */
@@ -663,17 +841,17 @@
       letter-spacing: 0.02em;
       padding: 17px 22px;
       border-radius: 14px;
-      color: #2a0a12;
-      background: linear-gradient(135deg, var(--gold-pale) 0%, var(--gold-bright) 40%, var(--gold) 100%);
+      color: #ffffff;
+      background: linear-gradient(135deg, #9adfff 0%, #38a8ff 42%, #1f6feb 100%);
       background-size: 200% 100%;
-      box-shadow: 0 12px 32px var(--gold-glow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      box-shadow: 0 12px 32px var(--gold-glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
       transition: transform 0.2s ease, box-shadow 0.2s ease, background-position 0.35s ease;
     }
 
     .btn:hover {
       background-position: 100% 0;
       transform: translateY(-1px);
-      box-shadow: 0 16px 36px rgba(201, 162, 39, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      box-shadow: 0 16px 36px rgba(56, 168, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
 
     .btn:active { transform: translateY(1px) scale(0.985); }
@@ -712,7 +890,7 @@
       padding-top: 20px;
       text-align: center;
       font-size: 0.68rem;
-      color: var(--text-dim);
+      color: var(--text-muted);
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
@@ -730,8 +908,8 @@
       margin-top: 14px;
       padding: 12px 14px;
       border-radius: 12px;
-      background: rgba(201, 162, 39, 0.08);
-      border: 1px solid rgba(201, 162, 39, 0.22);
+      background: rgba(56, 168, 255, 0.08);
+      border: 1px solid rgba(56, 168, 255, 0.22);
       text-align: center;
       text-decoration: none;
       color: inherit;
@@ -820,7 +998,7 @@
       inset: 0;
       border-radius: inherit;
       padding: 1px;
-      background: linear-gradient(145deg, rgba(232, 197, 71, 0.45), rgba(201, 162, 39, 0.1));
+      background: linear-gradient(145deg, rgba(125, 211, 255, 0.45), rgba(56, 168, 255, 0.1));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -858,7 +1036,7 @@
       gap: 6px;
       padding: 5px;
       border-radius: 14px;
-      background: rgba(20, 6, 10, 0.65);
+      background: rgba(6, 14, 28, 0.65);
       border: 1px solid var(--border-soft);
       margin-bottom: 16px;
     }
@@ -885,9 +1063,9 @@
     }
 
     .pay-method[aria-selected="true"] {
-      background: linear-gradient(160deg, rgba(155, 36, 64, 0.85), rgba(74, 18, 32, 0.95));
+      background: linear-gradient(160deg, rgba(37, 99, 235, 0.85), rgba(12, 40, 78, 0.95));
       color: var(--text);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 162, 39, 0.35);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(56, 168, 255, 0.35);
     }
 
     .pay-panel {
@@ -957,24 +1135,67 @@
     .field select {
       width: 100%;
       appearance: none;
-      border: 1px solid var(--border-soft);
-      background: rgba(20, 6, 10, 0.55);
+      -webkit-appearance: none;
+      border: 1px solid rgba(56, 168, 255, 0.28);
+      background: linear-gradient(180deg, rgba(12, 40, 78, 0.95), rgba(6, 14, 28, 0.98));
       color: var(--text);
       font-family: var(--font-sans);
       font-size: 0.95rem;
       padding: 12px 14px;
       border-radius: 10px;
       outline: none;
-      transition: border-color 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .field input:focus,
     .field select:focus {
-      border-color: var(--gold);
+      border-color: var(--gold-bright);
+      box-shadow: 0 0 0 3px rgba(56, 168, 255, 0.18);
     }
 
     .field input::placeholder {
       color: var(--text-dim);
+    }
+
+    .select-wrap {
+      position: relative;
+    }
+
+    .select-wrap::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid var(--gold-bright);
+      border-bottom: 2px solid var(--gold-bright);
+      transform: translateY(-65%) rotate(45deg);
+      pointer-events: none;
+    }
+
+    .field-select select {
+      padding-right: 36px;
+      cursor: pointer;
+      color: var(--text);
+      background-color: #0a1628;
+    }
+
+    .field-select select option,
+    .field-select select optgroup {
+      background-color: #0a1628;
+      color: #f2f7ff;
+    }
+
+    .field-select select option:checked,
+    .field-select select option:hover {
+      background-color: #1f6feb;
+      color: #ffffff;
+    }
+
+    .price-summary-pay {
+      margin-top: 4px;
+      margin-bottom: 12px;
     }
 
     .field-row {
@@ -1024,7 +1245,7 @@
       border-radius: 50%;
       border: 2px solid transparent;
       border-top-color: var(--gold-bright);
-      border-right-color: rgba(201, 162, 39, 0.25);
+      border-right-color: rgba(56, 168, 255, 0.25);
       animation: spin 0.85s linear infinite;
     }
 
@@ -1178,7 +1399,7 @@
       inset: 0;
       border-radius: inherit;
       padding: 1px;
-      background: linear-gradient(160deg, rgba(61, 207, 122, 0.4), rgba(201, 162, 39, 0.2), rgba(155, 36, 64, 0.35));
+      background: linear-gradient(160deg, rgba(61, 207, 122, 0.4), rgba(56, 168, 255, 0.2), rgba(37, 99, 235, 0.35));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
@@ -1239,7 +1460,7 @@
 
     .copy-btn:hover,
     .copy-btn.copied {
-      background: rgba(201, 162, 39, 0.3);
+      background: rgba(56, 168, 255, 0.3);
       color: #fff;
     }
 
@@ -1249,8 +1470,8 @@
       align-items: flex-start;
       padding: 16px 16px;
       border-radius: 14px;
-      background: linear-gradient(135deg, rgba(201, 162, 39, 0.12), rgba(155, 36, 64, 0.2));
-      border: 1px solid rgba(201, 162, 39, 0.35);
+      background: linear-gradient(135deg, rgba(56, 168, 255, 0.12), rgba(37, 99, 235, 0.2));
+      border: 1px solid rgba(56, 168, 255, 0.35);
       margin-bottom: 16px;
       animation: rise 0.5s ease 0.45s both;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
@@ -1261,7 +1482,7 @@
       width: 42px;
       height: 42px;
       border-radius: 11px;
-      background: linear-gradient(145deg, rgba(201, 162, 39, 0.25), rgba(155, 36, 64, 0.35));
+      background: linear-gradient(145deg, rgba(56, 168, 255, 0.25), rgba(37, 99, 235, 0.35));
       border: 1px solid var(--border);
       display: grid;
       place-items: center;
@@ -1338,6 +1559,275 @@
       .portal { padding: 36px 24px calc(36px + var(--safe-bottom)); }
     }
 
+
+
+    /* User dashboard */
+    .dash-hero {
+      text-align: center;
+      margin-bottom: 18px;
+      animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .dash-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(61, 207, 122, 0.35);
+      background: rgba(61, 207, 122, 0.12);
+      color: var(--success);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .dash-pill.is-offline {
+      border-color: rgba(56, 168, 255, 0.35);
+      background: rgba(56, 168, 255, 0.12);
+      color: var(--gold-bright);
+    }
+
+    .dash-pill .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 3px rgba(61, 207, 122, 0.18);
+    }
+
+    .dash-pill.is-offline .dot {
+      box-shadow: 0 0 0 3px rgba(56, 168, 255, 0.18);
+    }
+
+    .dash-hero h2 {
+      font-size: clamp(1.4rem, 5vw, 1.7rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    .dash-hero p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    .dash-plan-card {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 14px;
+    }
+
+    .dash-plan-card .label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+
+    .dash-plan-card .name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .dash-plan-card .validity {
+      font-size: 0.86rem;
+      color: var(--text-muted);
+    }
+
+    .device-card {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid var(--border-soft);
+      margin-bottom: 14px;
+    }
+
+    .device-card .device-title {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .device-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .device-row:first-of-type { border-top: 0; padding-top: 0; }
+
+    .device-row span {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+
+    .device-row strong {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--gold-pale);
+      text-align: right;
+      word-break: break-all;
+    }
+
+    /* Account bar */
+    .account-bar {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(165deg, rgba(12, 40, 78, 0.95) 0%, rgba(6, 14, 28, 0.98) 100%);
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .account-bar[hidden] { display: none !important; }
+
+    .account-bar-meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .account-bar-status {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 2px;
+    }
+
+    .account-bar-email {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-bar-plan {
+      margin-top: 2px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-logout {
+      flex-shrink: 0;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--gold-pale);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-logout:hover {
+      border-color: rgba(56, 168, 255, 0.55);
+      background: rgba(56, 168, 255, 0.1);
+    }
+
+    /* Auth screen */
+    .auth-card {
+      width: 100%;
+      padding: 22px 18px 18px;
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-soft);
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      margin-bottom: 18px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--border-soft);
+    }
+
+    .auth-tab {
+      border: 0;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 10px;
+      padding: 10px 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .auth-tab[aria-selected="true"] {
+      background: linear-gradient(135deg, rgba(56, 168, 255, 0.28), rgba(37, 99, 235, 0.45));
+      color: var(--gold-pale);
+      box-shadow: inset 0 0 0 1px rgba(56, 168, 255, 0.35);
+    }
+
+    .auth-card h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .auth-card .auth-sub {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    .auth-error {
+      display: none;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(180, 40, 40, 0.18);
+      border: 1px solid rgba(255, 120, 120, 0.35);
+      color: #ffc9c9;
+      font-size: 0.82rem;
+    }
+
+    .auth-error.visible { display: block; }
+
+    .auth-note {
+      margin-top: 14px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      text-align: center;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -1353,28 +1843,92 @@
     <div class="glow glow-b" aria-hidden="true"></div>
 
     <div class="wrap">
-      <!-- SCREEN: Plans -->
-      <section id="screen-plans" class="screen active" aria-label="Select Wi‑Fi plan">
+
+      <div class="account-bar" id="account-bar" hidden aria-hidden="true">
+        <div class="account-bar-meta">
+          <p class="account-bar-status" id="account-status">Logged out</p>
+          <p class="account-bar-email" id="account-email">—</p>
+          <p class="account-bar-plan" id="account-plan">No active plan yet</p>
+        </div>
+        <button type="button" class="btn-logout" id="btn-logout">Log out</button>
+      </div>
+
+      <!-- SCREEN: Auth -->
+      <section id="screen-auth" class="screen active" aria-label="Account login or signup">
         <header class="brand">
           <div class="brand-logo">
-            <div class="logo-seal" role="img" aria-label="Kaivalyadhama institutional crest">
-              <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle cx="48" cy="48" r="42" stroke="#e8c547" stroke-width="1.4" opacity="0.9"/>
-                <circle cx="48" cy="48" r="37" stroke="#c9a227" stroke-width="0.8" opacity="0.5"/>
-                <!-- Stylized lotus — institutional yoga motif -->
-                <g transform="translate(48 44)">
-                  <path d="M0 -16 C5.5 -9 6.5 -1.5 0 6 C-6.5 -1.5 -5.5 -9 0 -16Z" fill="#f5e6b8"/>
-                  <path d="M-11 -10 C-1.5 -9 2 -1 0 8 C-9 0 -15 -5 -11 -10Z" fill="#e8c547" opacity="0.92"/>
-                  <path d="M11 -10 C1.5 -9 -2 -1 0 8 C9 0 15 -5 11 -10Z" fill="#e8c547" opacity="0.92"/>
-                  <path d="M-15 0 C-7.5 -2 -2 3 0 12 C-7.5 6 -17 4 -15 0Z" fill="#c9a227" opacity="0.88"/>
-                  <path d="M15 0 C7.5 -2 2 3 0 12 C7.5 6 17 4 15 0Z" fill="#c9a227" opacity="0.88"/>
-                  <circle cx="0" cy="3" r="3.8" fill="#7a1a32" stroke="#f5e6b8" stroke-width="1.15"/>
-                </g>
-                <text x="48" y="76" text-anchor="middle" fill="#e8c547" font-family="'Segoe UI', Inter, Roboto, sans-serif" font-size="6.5" font-weight="600" letter-spacing="1.6">EST. 1924</text>
-              </svg>
+                        <img
+              class="brand-logo-img"
+              id="auth-logo-img"
+              src="assets/pcn-logo.png?v=5.0"
+              width="640"
+              height="640"
+              alt="PCN"
+            />
+          </div>
+          <div class="brand-divider" aria-hidden="true">
+            <span></span>
+            <svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 0l1.5 4.5L12 6l-4.5 1.5L6 12l-1.5-4.5L0 6l4.5-1.5z"/></svg>
+            <span></span>
+          </div>
+          <h1>Hostel Network <em>High Speed Internet</em></h1>
+          <p class="sub">Sign in to choose a plan and activate campus Wi‑Fi</p>
+        </header>
+
+        <div class="auth-card">
+          <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+            <button type="button" class="auth-tab" role="tab" data-auth-mode="login" aria-selected="true">Log in</button>
+            <button type="button" class="auth-tab" role="tab" data-auth-mode="signup" aria-selected="false">Sign up</button>
+          </div>
+          <h2 id="auth-title">Welcome back</h2>
+          <p class="auth-sub" id="auth-subtitle">Log in to continue to plan selection and payment.</p>
+          <p class="auth-error" id="auth-error" role="alert"></p>
+          <form id="auth-form" novalidate>
+            <div class="field" id="auth-name-field" hidden>
+              <label for="auth-name">Full name</label>
+              <input id="auth-name" name="name" type="text" autocomplete="name" placeholder="Your name" />
             </div>
-            <p class="logo-wordmark">Kaivalyadhama</p>
-            <p class="logo-tagline">Yoga Research Institute</p>
+            <div class="field" id="auth-mobile-field" hidden>
+              <label for="auth-mobile">Mobile number</label>
+              <input
+                id="auth-mobile"
+                name="mobile"
+                type="tel"
+                inputmode="numeric"
+                autocomplete="tel"
+                placeholder="10-digit Indian mobile"
+                maxlength="15"
+              />
+            </div>
+            <div class="field">
+              <label for="auth-email">Email</label>
+              <input id="auth-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+            </div>
+            <div class="field">
+              <label for="auth-password">Password</label>
+              <input id="auth-password" name="password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required minlength="6" />
+            </div>
+            <div class="cta" style="margin-top:16px;">
+              <button type="submit" class="btn" id="auth-submit">Log in</button>
+            </div>
+          </form>
+          <p class="auth-note">Sign in to continue. Active plans open your Wi‑Fi dashboard automatically.</p>
+        </div>
+
+        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
+      </section>
+
+      <!-- SCREEN: Plans -->
+      <section id="screen-plans" class="screen" aria-label="Select Wi‑Fi plan">
+        <header class="brand">
+          <div class="brand-logo">
+                        <img
+              class="brand-logo-img"
+              src="assets/pcn-logo.png?v=5.0"
+              width="640"
+              height="640"
+              alt="PCN"
+            />
           </div>
           <div class="brand-divider" aria-hidden="true">
             <span></span>
@@ -1401,6 +1955,19 @@
             >
               <span class="dur-label">1 Month</span>
               <span class="dur-hint">Regular price</span>
+            </button>
+            <button
+              type="button"
+              class="duration-tab"
+              role="radio"
+              aria-checked="false"
+              data-months="3"
+              data-billable="3"
+              data-free="0"
+              data-label="3 Months"
+            >
+              <span class="dur-label">3 Months</span>
+              <span class="dur-hint">No discount</span>
             </button>
             <button
               type="button"
@@ -1444,40 +2011,13 @@
             data-id="standard"
             data-name="30 Mbps Standard"
             data-speed="30 Mbps"
-            data-price="399"
+            data-price="499"
           >
             <span class="plan-radio" aria-hidden="true"></span>
             <span class="plan-body">
               <span class="plan-name">30 Mbps Standard</span>
               <span class="plan-meta">
                 Unlimited data
-                <span class="dot" aria-hidden="true"></span>
-                <span class="plan-duration-label">1 month</span>
-              </span>
-            </span>
-            <span class="plan-price">
-              <span class="was" data-was></span>
-              <span class="amount" data-total>₹399</span>
-              <span class="period" data-period>/month</span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            class="plan is-featured"
-            role="radio"
-            aria-checked="false"
-            data-id="streaming"
-            data-name="50 Mbps Streaming"
-            data-speed="50 Mbps"
-            data-price="499"
-          >
-            <span class="plan-badge">Popular</span>
-            <span class="plan-radio" aria-hidden="true"></span>
-            <span class="plan-body">
-              <span class="plan-name">50 Mbps Streaming</span>
-              <span class="plan-meta">
-                HD streaming ready
                 <span class="dot" aria-hidden="true"></span>
                 <span class="plan-duration-label">1 month</span>
               </span>
@@ -1491,13 +2031,40 @@
 
           <button
             type="button"
+            class="plan is-featured"
+            role="radio"
+            aria-checked="false"
+            data-id="streaming"
+            data-name="50 Mbps Streaming"
+            data-speed="50 Mbps"
+            data-price="599"
+          >
+            <span class="plan-badge">Popular</span>
+            <span class="plan-radio" aria-hidden="true"></span>
+            <span class="plan-body">
+              <span class="plan-name">50 Mbps Streaming</span>
+              <span class="plan-meta">
+                HD streaming ready
+                <span class="dot" aria-hidden="true"></span>
+                <span class="plan-duration-label">1 month</span>
+              </span>
+            </span>
+            <span class="plan-price">
+              <span class="was" data-was></span>
+              <span class="amount" data-total>₹599</span>
+              <span class="period" data-period>/month</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
             class="plan"
             role="radio"
             aria-checked="false"
             data-id="pro"
             data-name="75 Mbps Pro"
             data-speed="75 Mbps"
-            data-price="699"
+            data-price="799"
           >
             <span class="plan-radio" aria-hidden="true"></span>
             <span class="plan-body">
@@ -1510,7 +2077,7 @@
             </span>
             <span class="plan-price">
               <span class="was" data-was></span>
-              <span class="amount" data-total>₹699</span>
+              <span class="amount" data-total>₹799</span>
               <span class="period" data-period>/month</span>
             </span>
           </button>
@@ -1523,7 +2090,7 @@
             data-id="ultimate"
             data-name="100 Mbps Ultimate"
             data-speed="100 Mbps"
-            data-price="799"
+            data-price="899"
           >
             <span class="plan-radio" aria-hidden="true"></span>
             <span class="plan-body">
@@ -1536,24 +2103,58 @@
             </span>
             <span class="plan-price">
               <span class="was" data-was></span>
-              <span class="amount" data-total>₹799</span>
+              <span class="amount" data-total>₹899</span>
               <span class="period" data-period>/month</span>
             </span>
           </button>
         </div>
 
-        <div class="price-summary" aria-live="polite">
-          <div class="price-summary-left">
-            <p class="ps-label">Total payable</p>
-            <p class="ps-detail" id="summary-detail">30 Mbps Standard · 1 Month</p>
-          </div>
-          <div class="price-summary-right">
-            <p class="ps-was" id="summary-was">₹399</p>
-            <p class="ps-total" id="summary-total">₹399</p>
-          </div>
-        </div>
         <div class="savings-chip" id="savings-chip" aria-live="polite">
           You save <span id="savings-amount">₹0</span> with this duration
+        </div>
+
+        <div class="doc-upload" id="doc-upload">
+          <div class="doc-upload-head">
+            <p class="section-label">Upload government ID</p>
+            <p class="doc-upload-hint">Only government IDs accepted: Aadhaar, PAN, Driving Licence, Voter ID, or Passport. Hostel ID / student ID not allowed. (PDF / JPG / PNG · max 5 MB)</p>
+          </div>
+          <div class="field field-select" style="margin-bottom:12px;">
+            <label for="doc-id-type">ID type</label>
+            <div class="select-wrap">
+              <select id="doc-id-type" name="doc-id-type" required>
+                <option value="" selected disabled>Select government ID</option>
+                <option value="aadhaar">Aadhaar</option>
+                <option value="pan">PAN card</option>
+                <option value="driving_licence">Driving licence</option>
+                <option value="voter_id">Voter ID</option>
+                <option value="passport">Passport</option>
+              </select>
+            </div>
+          </div>
+          <label class="doc-drop" id="doc-drop" for="doc-file">
+            <input
+              type="file"
+              id="doc-file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              aria-describedby="doc-error"
+            />
+            <svg class="doc-drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <path d="M12 18v-6"/>
+              <path d="M9 15l3-3 3 3"/>
+            </svg>
+            <span class="doc-drop-title" id="doc-drop-title">Tap to upload government ID</span>
+            <span class="doc-drop-sub" id="doc-drop-sub">Hostel / student ID not accepted</span>
+          </label>
+          <div class="doc-file-meta" id="doc-file-meta" aria-live="polite">
+            <div class="doc-file-info">
+              <span class="doc-file-name" id="doc-file-name">—</span>
+              <span class="doc-file-size" id="doc-file-size">—</span>
+            </div>
+            <button type="button" class="doc-remove" id="doc-remove">Remove</button>
+          </div>
+          <p class="doc-error" id="doc-error" role="alert"></p>
         </div>
 
         <div class="trust">
@@ -1571,148 +2172,55 @@
           </span>
         </div>
 
+        <div class="price-summary price-summary-pay" aria-live="polite">
+          <div class="price-summary-top">
+            <div class="price-summary-left">
+              <p class="ps-label">Payment summary</p>
+              <p class="ps-detail" id="summary-detail">30 Mbps Standard · 1 Month</p>
+            </div>
+            <div class="price-summary-right">
+              <p class="ps-was" id="summary-was">₹499</p>
+              <p class="ps-total" id="summary-total">₹511</p>
+            </div>
+          </div>
+          <div class="price-breakdown" id="price-breakdown">
+            <div class="price-breakdown-row">
+              <span>Plan amount</span>
+              <span id="summary-plan-amount">₹499</span>
+            </div>
+            <div class="price-breakdown-row is-fee">
+              <span>Platform fee (Razorpay 2%)</span>
+              <span id="summary-platform-fee">₹10</span>
+            </div>
+            <div class="price-breakdown-row is-fee">
+              <span>GST on platform fee (18%)</span>
+              <span id="summary-fee-gst">₹2</span>
+            </div>
+            <div class="price-breakdown-row is-total">
+              <span>Amount to pay</span>
+              <span id="summary-pay-total">₹511</span>
+            </div>
+            <p class="price-breakdown-note">
+              Platform fee is Razorpay’s payment processing charge, shown separately before you pay.
+            </p>
+          </div>
+        </div>
+
         <div class="cta">
-          <button type="button" class="btn" id="btn-pay">Proceed to Pay ₹399</button>
+          <button type="button" class="btn" id="btn-pay">Pay ₹499</button>
+          <p class="secure-note" style="justify-content:center;margin-top:10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Secured by Razorpay Test Mode
+          </p>
           <p class="fine">By continuing you agree to Kaivalyadhama hostel network fair-usage policy.</p>
         </div>
 
         <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
-        <a class="helpline" href="tel:9322752851">
+        <a class="helpline" href="#" data-tel="9322752851">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
           </svg>
-          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
-        </a>
-      </section>
-
-      <!-- SCREEN: Payment Gateway -->
-      <section id="screen-gateway" class="screen" aria-label="Secure payment checkout">
-        <div class="gateway-header">
-          <div>
-            <h2>Secure Checkout</h2>
-            <p>Encrypted payment gateway</p>
-          </div>
-          <button type="button" class="gateway-back" id="btn-gateway-back">← Back</button>
-        </div>
-
-        <div class="gateway-amount-card">
-          <div>
-            <p class="ga-label">Paying for</p>
-            <p class="ga-plan" id="gateway-plan">30 Mbps Standard · 1 Month</p>
-          </div>
-          <p class="ga-total" id="gateway-total">₹399</p>
-        </div>
-
-        <p class="section-label">Payment method</p>
-        <div class="pay-methods" role="tablist" aria-label="Payment methods">
-          <button type="button" class="pay-method" role="tab" id="tab-upi" aria-selected="true" aria-controls="panel-upi" data-method="upi">UPI / QR</button>
-          <button type="button" class="pay-method" role="tab" id="tab-card" aria-selected="false" aria-controls="panel-card" data-method="card">Credit / Debit</button>
-          <button type="button" class="pay-method" role="tab" id="tab-net" aria-selected="false" aria-controls="panel-net" data-method="net">Net Banking</button>
-        </div>
-
-        <div class="pay-panel active" id="panel-upi" role="tabpanel" aria-labelledby="tab-upi">
-          <div class="qr-box" aria-label="Dummy UPI QR code">
-            <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect width="120" height="120" fill="#faf6f0"/>
-              <g fill="#1a060c">
-                <rect x="8" y="8" width="28" height="28"/>
-                <rect x="14" y="14" width="16" height="16" fill="#faf6f0"/>
-                <rect x="18" y="18" width="8" height="8"/>
-                <rect x="84" y="8" width="28" height="28"/>
-                <rect x="90" y="14" width="16" height="16" fill="#faf6f0"/>
-                <rect x="94" y="18" width="8" height="8"/>
-                <rect x="8" y="84" width="28" height="28"/>
-                <rect x="14" y="90" width="16" height="16" fill="#faf6f0"/>
-                <rect x="18" y="94" width="8" height="8"/>
-                <rect x="44" y="8" width="6" height="6"/>
-                <rect x="56" y="8" width="6" height="6"/>
-                <rect x="68" y="14" width="6" height="6"/>
-                <rect x="44" y="20" width="6" height="6"/>
-                <rect x="62" y="20" width="6" height="6"/>
-                <rect x="50" y="32" width="6" height="6"/>
-                <rect x="8" y="44" width="6" height="6"/>
-                <rect x="20" y="50" width="6" height="6"/>
-                <rect x="32" y="44" width="6" height="6"/>
-                <rect x="44" y="44" width="12" height="12"/>
-                <rect x="62" y="44" width="6" height="6"/>
-                <rect x="74" y="50" width="6" height="6"/>
-                <rect x="86" y="44" width="6" height="6"/>
-                <rect x="98" y="56" width="6" height="6"/>
-                <rect x="44" y="62" width="6" height="6"/>
-                <rect x="56" y="68" width="6" height="6"/>
-                <rect x="68" y="62" width="6" height="6"/>
-                <rect x="80" y="74" width="6" height="6"/>
-                <rect x="92" y="80" width="6" height="6"/>
-                <rect x="44" y="86" width="6" height="6"/>
-                <rect x="56" y="92" width="6" height="6"/>
-                <rect x="68" y="86" width="12" height="6"/>
-                <rect x="86" y="92" width="6" height="6"/>
-                <rect x="98" y="98" width="6" height="6"/>
-                <rect x="104" y="68" width="6" height="6"/>
-              </g>
-              <rect x="48" y="48" width="24" height="24" rx="4" fill="#7a1a32" stroke="#c9a227" stroke-width="2"/>
-              <circle cx="60" cy="60" r="5" fill="#e8c547"/>
-            </svg>
-          </div>
-          <p class="qr-hint">Scan with any UPI app to pay</p>
-          <p class="qr-upi-id">hostelwifi@kaivalyadhama</p>
-          <div class="field">
-            <label for="upi-id">Or enter UPI ID</label>
-            <input id="upi-id" type="text" placeholder="yourname@upi" autocomplete="off" />
-          </div>
-        </div>
-
-        <div class="pay-panel" id="panel-card" role="tabpanel" aria-labelledby="tab-card" hidden>
-          <div class="field">
-            <label for="card-number">Card number</label>
-            <input id="card-number" type="text" inputmode="numeric" placeholder="XXXX XXXX XXXX XXXX" maxlength="19" autocomplete="off" />
-          </div>
-          <div class="field">
-            <label for="card-name">Name on card</label>
-            <input id="card-name" type="text" placeholder="Cardholder name" autocomplete="off" />
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label for="card-expiry">Expiry</label>
-              <input id="card-expiry" type="text" placeholder="MM/YY" maxlength="5" autocomplete="off" />
-            </div>
-            <div class="field">
-              <label for="card-cvv">CVV</label>
-              <input id="card-cvv" type="password" inputmode="numeric" placeholder="•••" maxlength="4" autocomplete="off" />
-            </div>
-          </div>
-        </div>
-
-        <div class="pay-panel" id="panel-net" role="tabpanel" aria-labelledby="tab-net" hidden>
-          <div class="field">
-            <label for="bank-select">Select your bank</label>
-            <select id="bank-select">
-              <option value="">Choose bank</option>
-              <option>State Bank of India</option>
-              <option>HDFC Bank</option>
-              <option>ICICI Bank</option>
-              <option>Axis Bank</option>
-              <option>Bank of Baroda</option>
-              <option>Kotak Mahindra Bank</option>
-            </select>
-          </div>
-          <p class="qr-hint" style="text-align:left;margin-top:4px;">You will be redirected to your bank’s secure page (demo).</p>
-        </div>
-
-        <div class="cta">
-          <button type="button" class="btn" id="btn-confirm-pay">Confirm &amp; Pay ₹399</button>
-          <p class="secure-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            256-bit SSL · Demo gateway
-          </p>
-        </div>
-
-        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
-        <a class="helpline" href="tel:9322752851">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-          </svg>
-          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+          <span class="helpline-text">9 AM – 9 PM Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
         </a>
       </section>
 
@@ -1745,16 +2253,114 @@
             </div>
           </div>
         </div>
-        <a class="helpline" href="tel:9322752851" style="margin-top:auto;">
+        <a class="helpline" href="#" data-tel="9322752851" style="margin-top:auto;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
           </svg>
-          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+          <span class="helpline-text">9 AM – 9 PM Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
         </a>
       </section>
 
-      <!-- SCREEN: Success -->
-      <section id="screen-success" class="screen" aria-label="Payment successful">
+
+      <!-- SCREEN: Active user dashboard -->
+      <section id="screen-dashboard" class="screen" aria-label="Active plan dashboard">
+        <div class="dash-hero">
+          <div class="dash-pill" id="dash-status-pill">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="dash-connection-label">Connected</span>
+          </div>
+          <h2>Your Wi‑Fi Dashboard</h2>
+          <p id="dash-welcome">Welcome back</p>
+        </div>
+
+        <div class="dash-plan-card">
+          <p class="label">Active plan</p>
+          <p class="name" id="dash-plan-name">—</p>
+          <p class="validity" id="dash-plan-validity">Valid until —</p>
+        </div>
+
+        <div class="meta-grid">
+          <div class="meta-pill">
+            <span>Speed</span>
+            <strong id="dash-speed">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Duration</span>
+            <strong id="dash-duration">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Amount Paid</span>
+            <strong id="dash-paid">—</strong>
+          </div>
+          <div class="meta-pill">
+            <span>Status</span>
+            <strong id="dash-status">Active</strong>
+          </div>
+        </div>
+
+        <div class="creds">
+          <p class="creds-title">Your Wi‑Fi Credentials</p>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">Username</p>
+              <p class="cred-value" id="dash-cred-user">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="dash-cred-user">COPY</button>
+          </div>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">Password</p>
+              <p class="cred-value" id="dash-cred-pass">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="dash-cred-pass">COPY</button>
+          </div>
+        </div>
+
+        <div class="device-card">
+          <p class="device-title">Bound device</p>
+          <div class="device-row">
+            <span>MAC address</span>
+            <strong id="dash-mac">—</strong>
+          </div>
+          <div class="device-row">
+            <span>Device</span>
+            <strong id="dash-device">—</strong>
+          </div>
+          <div class="device-row">
+            <span>Binding</span>
+            <strong id="dash-binding">MAC locked</strong>
+          </div>
+        </div>
+
+        <div class="security-badge" role="status">
+          <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div>
+            <strong>Session protected</strong>
+            <p>Credentials are bound to this device. Sharing is restricted.</p>
+          </div>
+        </div>
+
+        <div class="cta">
+          <button type="button" class="btn" id="btn-dash-toggle">Disconnect Wi‑Fi</button>
+          <button type="button" class="btn btn-ghost" id="btn-dash-logout">Log out</button>
+        </div>
+
+        <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
+        <a class="helpline" href="#" data-tel="9322752851">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+          </svg>
+          <span class="helpline-text">9 AM – 9 PM Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+        </a>
+      </section>
+
+      <!-- SCREEN: Success / Active plan dashboard -->
+      <section id="screen-success" class="screen" aria-label="Active plan dashboard">
         <div class="success-top">
           <div class="check-wrap" aria-hidden="true">
             <div class="check-ring"></div>
@@ -1764,8 +2370,8 @@
               </svg>
             </div>
           </div>
-          <h2>Payment Successful!</h2>
-          <p>Your <span id="success-plan-name">plan</span> is now active.</p>
+          <h2 id="success-title">Payment Successful!</h2>
+          <p id="success-subtitle">Your <span id="success-plan-name">plan</span> is now active.</p>
           <p class="success-savings" id="success-savings">You saved <span id="success-savings-amount">₹0</span></p>
         </div>
 
@@ -1785,6 +2391,13 @@
             </div>
             <button type="button" class="copy-btn" data-copy="cred-pass">COPY</button>
           </div>
+          <div class="cred-row">
+            <div>
+              <p class="cred-label">MAC Address</p>
+              <p class="cred-value" id="cred-mac">—</p>
+            </div>
+            <button type="button" class="copy-btn" data-copy="cred-mac">COPY</button>
+          </div>
         </div>
 
         <div class="security-badge" role="status">
@@ -1796,7 +2409,7 @@
           </div>
           <div>
             <strong>MAC Bound</strong>
-            <p>Locked to this device. Account sharing is strictly restricted.</p>
+            <p id="success-mac-note">Locked to this device. Account sharing is strictly restricted.</p>
           </div>
         </div>
 
@@ -1821,332 +2434,21 @@
 
         <div class="cta">
           <button type="button" class="btn" id="btn-connect">Connect to Network</button>
-          <button type="button" class="btn btn-ghost" id="btn-restart">Demo: Start Over</button>
+          <button type="button" class="btn btn-ghost" id="btn-restart">Log out</button>
         </div>
 
         <p class="footer">Kaivalyadhama · <em>Hostel Wi‑Fi Portal</em></p>
-        <a class="helpline" href="tel:9322752851">
+        <a class="helpline" href="#" data-tel="9322752851">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
           </svg>
-          <span class="helpline-text">24/7 Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
+          <span class="helpline-text">9 AM – 9 PM Hostel Wi‑Fi Support: <strong>9322752851</strong></span>
         </a>
       </section>
     </div>
   </div>
 
-  <script>
-    (function () {
-      const plans = Array.from(document.querySelectorAll(".plan"));
-      const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
-      const payMethods = Array.from(document.querySelectorAll(".pay-method"));
-      const btnPay = document.getElementById("btn-pay");
-      const btnConfirmPay = document.getElementById("btn-confirm-pay");
-      const btnGatewayBack = document.getElementById("btn-gateway-back");
-      const btnRestart = document.getElementById("btn-restart");
-      const btnConnect = document.getElementById("btn-connect");
-      const screens = {
-        plans: document.getElementById("screen-plans"),
-        gateway: document.getElementById("screen-gateway"),
-        processing: document.getElementById("screen-processing"),
-        success: document.getElementById("screen-success"),
-      };
-      const steps = [
-        document.getElementById("step-1"),
-        document.getElementById("step-2"),
-        document.getElementById("step-3"),
-      ];
-
-      let selected = {
-        id: "standard",
-        name: "30 Mbps Standard",
-        speed: "30 Mbps",
-        monthly: 399,
-      };
-
-      let duration = {
-        months: 1,
-        billable: 1,
-        free: 0,
-        label: "1 Month",
-      };
-
-      let paymentMethod = "upi";
-
-      function formatINR(amount) {
-        return "₹" + Number(amount).toLocaleString("en-IN");
-      }
-
-      function calcPricing(monthly) {
-        const full = monthly * duration.months;
-        const total = monthly * duration.billable;
-        const savings = full - total;
-        return { monthly, full, total, savings };
-      }
-
-      function getQuote() {
-        return calcPricing(selected.monthly);
-      }
-
-      function showScreen(name) {
-        Object.values(screens).forEach((el) => el.classList.remove("active"));
-        screens[name].classList.add("active");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }
-
-      function updatePricingUI() {
-        const quote = getQuote();
-        const durationShort =
-          duration.months === 1 ? "1 month" : duration.months + " months";
-        const detail = selected.name + " · " + duration.label;
-
-        plans.forEach((btn) => {
-          const monthly = Number(btn.dataset.price);
-          const p = calcPricing(monthly);
-          const amountEl = btn.querySelector("[data-total]");
-          const wasEl = btn.querySelector("[data-was]");
-          const periodEl = btn.querySelector("[data-period]");
-          const durLabel = btn.querySelector(".plan-duration-label");
-
-          amountEl.textContent = formatINR(p.total);
-          if (p.savings > 0) {
-            wasEl.textContent = formatINR(p.full);
-            wasEl.classList.add("visible");
-            periodEl.textContent = "total · " + duration.label;
-          } else {
-            wasEl.textContent = "";
-            wasEl.classList.remove("visible");
-            periodEl.textContent = "/month";
-          }
-          if (durLabel) durLabel.textContent = durationShort;
-        });
-
-        document.getElementById("summary-detail").textContent = detail;
-        document.getElementById("summary-total").textContent = formatINR(quote.total);
-        document.getElementById("gateway-plan").textContent = detail;
-        document.getElementById("gateway-total").textContent = formatINR(quote.total);
-
-        const wasSummary = document.getElementById("summary-was");
-        const savingsChip = document.getElementById("savings-chip");
-        if (quote.savings > 0) {
-          wasSummary.textContent = formatINR(quote.full);
-          wasSummary.classList.add("visible");
-          document.getElementById("savings-amount").textContent = formatINR(quote.savings);
-          savingsChip.classList.add("visible");
-        } else {
-          wasSummary.classList.remove("visible");
-          savingsChip.classList.remove("visible");
-        }
-
-        btnPay.textContent = "Proceed to Pay " + formatINR(quote.total);
-        btnConfirmPay.textContent = "Confirm & Pay " + formatINR(quote.total);
-      }
-
-      function selectPlan(btn) {
-        plans.forEach((p) => p.setAttribute("aria-checked", "false"));
-        btn.setAttribute("aria-checked", "true");
-        selected = {
-          id: btn.dataset.id,
-          name: btn.dataset.name,
-          speed: btn.dataset.speed,
-          monthly: Number(btn.dataset.price),
-        };
-        updatePricingUI();
-      }
-
-      function selectDuration(btn) {
-        durationTabs.forEach((t) => t.setAttribute("aria-checked", "false"));
-        btn.setAttribute("aria-checked", "true");
-        duration = {
-          months: Number(btn.dataset.months),
-          billable: Number(btn.dataset.billable),
-          free: Number(btn.dataset.free),
-          label: btn.dataset.label,
-        };
-        updatePricingUI();
-      }
-
-      function selectPayMethod(btn) {
-        paymentMethod = btn.dataset.method;
-        payMethods.forEach((t) => t.setAttribute("aria-selected", "false"));
-        btn.setAttribute("aria-selected", "true");
-
-        document.querySelectorAll(".pay-panel").forEach((panel) => {
-          const active = panel.id === "panel-" + paymentMethod;
-          panel.classList.toggle("active", active);
-          panel.hidden = !active;
-        });
-      }
-
-      plans.forEach((btn) => {
-        btn.addEventListener("click", () => selectPlan(btn));
-        btn.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            selectPlan(btn);
-          }
-        });
-      });
-
-      durationTabs.forEach((btn) => {
-        btn.addEventListener("click", () => selectDuration(btn));
-        btn.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            selectDuration(btn);
-          }
-        });
-      });
-
-      payMethods.forEach((btn) => {
-        btn.addEventListener("click", () => selectPayMethod(btn));
-      });
-
-      function randomCreds() {
-        const n = String(Math.floor(1000 + Math.random() * 9000));
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-        let suffix = "";
-        for (let i = 0; i < 4; i++) {
-          suffix += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return {
-          user: "kdhm" + n,
-          pass: "Yoga@" + suffix + n.slice(0, 2),
-        };
-      }
-
-      function validUntil(months) {
-        const d = new Date();
-        d.setDate(d.getDate() + months * 30);
-        return d.toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-        });
-      }
-
-      function resetSteps() {
-        steps.forEach((s, i) => {
-          s.classList.remove("active", "done");
-          if (i === 0) s.classList.add("active");
-        });
-      }
-
-      function methodLabel() {
-        if (paymentMethod === "card") return "card";
-        if (paymentMethod === "net") return "net banking";
-        return "UPI";
-      }
-
-      function runPayment() {
-        const quote = getQuote();
-        resetSteps();
-        document.getElementById("processing-msg").textContent =
-          "Confirming " + methodLabel() + " payment · Please wait…";
-        showScreen("processing");
-
-        [700, 1400, 2100].forEach((ms, i) => {
-          setTimeout(() => {
-            if (i > 0) {
-              steps[i - 1].classList.remove("active");
-              steps[i - 1].classList.add("done");
-            }
-            steps[i].classList.add("active");
-          }, ms);
-        });
-
-        setTimeout(() => {
-          steps[2].classList.remove("active");
-          steps[2].classList.add("done");
-
-          const creds = randomCreds();
-          document.getElementById("cred-user").textContent = creds.user;
-          document.getElementById("cred-pass").textContent = creds.pass;
-          document.getElementById("success-plan-name").textContent =
-            selected.name + " · " + duration.label;
-          document.getElementById("meta-speed").textContent = selected.speed;
-          document.getElementById("meta-duration").textContent = duration.label;
-          document.getElementById("meta-paid").textContent = formatINR(quote.total);
-          document.getElementById("meta-valid").textContent = validUntil(duration.months);
-
-          const savingsEl = document.getElementById("success-savings");
-          if (quote.savings > 0) {
-            document.getElementById("success-savings-amount").textContent =
-              formatINR(quote.savings) +
-              " (" +
-              duration.free +
-              (duration.free === 1 ? " month" : " months") +
-              " free)";
-            savingsEl.classList.add("visible");
-          } else {
-            savingsEl.classList.remove("visible");
-          }
-
-          document.querySelectorAll(".copy-btn").forEach((b) => {
-            b.textContent = "COPY";
-            b.classList.remove("copied");
-          });
-
-          showScreen("success");
-          btnConfirmPay.disabled = false;
-        }, 2800);
-      }
-
-      btnPay.addEventListener("click", () => {
-        updatePricingUI();
-        showScreen("gateway");
-      });
-
-      btnGatewayBack.addEventListener("click", () => {
-        showScreen("plans");
-      });
-
-      btnConfirmPay.addEventListener("click", () => {
-        btnConfirmPay.disabled = true;
-        runPayment();
-      });
-
-      btnRestart.addEventListener("click", () => {
-        showScreen("plans");
-        btnConnect.textContent = "Connect to Network";
-        btnConnect.disabled = false;
-        btnConfirmPay.disabled = false;
-      });
-
-      btnConnect.addEventListener("click", () => {
-        btnConnect.textContent = "Connected ✓";
-        btnConnect.disabled = true;
-        setTimeout(() => {
-          btnConnect.textContent = "Connect to Network";
-          btnConnect.disabled = false;
-        }, 2200);
-      });
-
-      document.querySelectorAll(".copy-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const id = btn.getAttribute("data-copy");
-          const text = document.getElementById(id).textContent;
-          try {
-            await navigator.clipboard.writeText(text);
-          } catch {
-            const ta = document.createElement("textarea");
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            document.body.removeChild(ta);
-          }
-          btn.textContent = "Copied! ✓";
-          btn.classList.add("copied");
-          setTimeout(() => {
-            btn.textContent = "COPY";
-            btn.classList.remove("copied");
-          }, 2000);
-        });
-      });
-
-      updatePricingUI();
-    })();
-  </script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script type="module" src="js/portal-app.js?v=5.0"></script>
 </body>
 </html>

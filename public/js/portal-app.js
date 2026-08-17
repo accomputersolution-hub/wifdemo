@@ -1,0 +1,1687 @@
+/**
+ * Captive portal UI + Firebase Auth / Firestore wiring.
+ */
+
+import {
+  watchAuthState,
+  signUp,
+  signIn,
+  logOut,
+  friendlyAuthError,
+} from "./auth-service.js?v=5.0";
+import {
+  getUserDocument,
+  saveUserMobile,
+  saveSelectedPlan,
+  markTransactionPending,
+  markTransactionFailed,
+  activatePlan,
+  setConnectionStatus,
+  ensureActivePlanDetails,
+  friendlyFirestoreError,
+} from "./user-service.js?v=5.0";
+import {
+  RAZORPAY_CONFIG,
+  RAZORPAY_KEY_ID,
+  RAZORPAY_KEY_FINGERPRINT,
+  createOrderOrFallback,
+  verifyPaymentOrSkip,
+  getDomesticCheckoutConfig,
+  buildDomesticPrefill,
+  normalizeIndiaMobile,
+} from "./razorpay-config.js?v=5.0";
+
+const plans = Array.from(document.querySelectorAll(".plan"));
+const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
+const btnPay = document.getElementById("btn-pay");
+const btnRestart = document.getElementById("btn-restart");
+const btnConnect = document.getElementById("btn-connect");
+const btnDashToggle = document.getElementById("btn-dash-toggle");
+const btnDashLogout = document.getElementById("btn-dash-logout");
+
+const screens = {
+  auth: document.getElementById("screen-auth"),
+  plans: document.getElementById("screen-plans"),
+  processing: document.getElementById("screen-processing"),
+  success: document.getElementById("screen-success"),
+  dashboard: document.getElementById("screen-dashboard"),
+};
+
+const accountBar = document.getElementById("account-bar");
+const accountEmail = document.getElementById("account-email");
+const accountPlan = document.getElementById("account-plan");
+const accountStatus = document.getElementById("account-status");
+const btnLogout = document.getElementById("btn-logout");
+const authError = document.getElementById("auth-error");
+const authForm = document.getElementById("auth-form");
+const authSubmit = document.getElementById("auth-submit");
+const authToggleBtns = Array.from(document.querySelectorAll("[data-auth-mode]"));
+const authNameField = document.getElementById("auth-name-field");
+const authMobileField = document.getElementById("auth-mobile-field");
+const authTitle = document.getElementById("auth-title");
+const authSubtitle = document.getElementById("auth-subtitle");
+
+let currentUser = null;
+let userDoc = null;
+let authMode = "login";
+/** Holds email/mobile from the auth form until Firestore doc is ready. */
+let pendingContact = { email: "", mobile: "" };
+/** Tracks which Firebase uid the in-memory session belongs to. */
+let sessionUid = null;
+
+let selected = {
+  id: "standard",
+  name: "30 Mbps Standard",
+  speed: "30 Mbps",
+  monthly: 499,
+};
+
+let duration = {
+  months: 1,
+  billable: 1,
+  free: 0,
+  label: "1 Month",
+};
+
+let uploadedDoc = null;
+
+const docDrop = document.getElementById("doc-drop");
+const docFileInput = document.getElementById("doc-file");
+const docFileMeta = document.getElementById("doc-file-meta");
+const docFileName = document.getElementById("doc-file-name");
+const docFileSize = document.getElementById("doc-file-size");
+const docDropTitle = document.getElementById("doc-drop-title");
+const docDropSub = document.getElementById("doc-drop-sub");
+const docError = document.getElementById("doc-error");
+const docRemove = document.getElementById("doc-remove");
+const MAX_DOC_BYTES = 5 * 1024 * 1024;
+const ALLOWED_DOC_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const ALLOWED_DOC_EXTS = [".pdf", ".jpg", ".jpeg", ".png"];
+/** Razorpay domestic convenience fee passed to the customer (excl. GST). */
+const RAZORPAY_PLATFORM_FEE_RATE = 0.02;
+/** GST on Razorpay platform fee. */
+const GST_ON_PLATFORM_FEE_RATE = 0.18;
+
+const INITIAL_SELECTED = {
+  id: "standard",
+  name: "30 Mbps Standard",
+  speed: "30 Mbps",
+  monthly: 499,
+};
+
+const INITIAL_DURATION = {
+  months: 1,
+  billable: 1,
+  free: 0,
+  label: "1 Month",
+};
+
+function clearBrowserStorage() {
+  try {
+    localStorage.clear();
+  } catch (error) {
+    console.warn("Could not clear localStorage:", error);
+  }
+  try {
+    sessionStorage.clear();
+  } catch (error) {
+    console.warn("Could not clear sessionStorage:", error);
+  }
+}
+
+/**
+ * Razorpay Checkout (esp. Chrome) remembers last contact via:
+ * - localStorage: razorpay_prefill_data_v1, rzp_device_id, rzp_stored_checkout_id
+ * - cookie: rzp_unified_session_id
+ * Clear these + reload checkout.js so a new signup cannot inherit helpline.
+ */
+function clearRazorpayClientMemory() {
+  const knownKeys = [
+    "razorpay_prefill_data_v1",
+    "rzp_stored_checkout_id",
+    "rzp_device_id",
+    "rzp_unified_session_id",
+    "customerAccessToken",
+    "sessionId",
+  ];
+  const match = /razorpay|rzp_|rzp-|checkout/i;
+
+  const purgeStorage = (storage) => {
+    if (!storage) return;
+    knownKeys.forEach((key) => {
+      try {
+        storage.removeItem(key);
+      } catch (_) {
+        /* ignore */
+      }
+    });
+    const keys = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key && match.test(key)) keys.push(key);
+    }
+    keys.forEach((key) => {
+      try {
+        storage.removeItem(key);
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  };
+
+  try {
+    purgeStorage(window.localStorage);
+  } catch (_) {
+    /* ignore */
+  }
+  try {
+    purgeStorage(window.sessionStorage);
+  } catch (_) {
+    /* ignore */
+  }
+
+  const expireCookie = (name) => {
+    const expires = "expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    const host = window.location.hostname;
+    const variants = [
+      `${name}=; ${expires}; path=/`,
+      `${name}=; ${expires}; path=/; SameSite=Lax`,
+      `${name}=; ${expires}; path=/; SameSite=None; Secure`,
+      `${name}=; ${expires}; path=/; domain=${host}`,
+      `${name}=; ${expires}; path=/; domain=${host}; SameSite=Lax`,
+      `${name}=; ${expires}; path=/; domain=.${host}`,
+    ];
+    variants.forEach((value) => {
+      try {
+        document.cookie = value;
+      } catch (_) {
+        /* ignore */
+      }
+    });
+  };
+
+  try {
+    expireCookie("rzp_unified_session_id");
+    document.cookie.split(";").forEach((part) => {
+      const name = part.split("=")[0].trim();
+      if (name && match.test(name)) expireCookie(name);
+    });
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+/**
+ * Chrome keeps Razorpay SDK + session in memory; reload checkout.js so prefill
+ * from this Pay click wins over the previous account's remembered contact.
+ */
+function reloadRazorpaySdk() {
+  clearRazorpayClientMemory();
+
+  document
+    .querySelectorAll('script[src*="checkout.razorpay.com"]')
+    .forEach((node) => {
+      try {
+        node.remove();
+      } catch (_) {
+        /* ignore */
+      }
+    });
+
+  try {
+    delete window.Razorpay;
+  } catch (_) {
+    try {
+      window.Razorpay = undefined;
+    } catch (__) {
+      /* ignore */
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src =
+      "https://checkout.razorpay.com/v1/checkout.js?ts=" + Date.now();
+    script.async = true;
+    script.onload = () => {
+      if (typeof window.Razorpay === "function") resolve();
+      else reject(new Error("Razorpay SDK missing after reload"));
+    };
+    script.onerror = () => reject(new Error("Failed to reload Razorpay SDK"));
+    document.head.appendChild(script);
+  });
+}
+
+function clearCheckoutContactFields() {
+  // Checkout contact fields removed — email/mobile come from signup/login profile.
+}
+
+function toCheckoutMobileDisplay(raw) {
+  const normalized = normalizeIndiaMobile(raw);
+  if (normalized) return normalized.replace(/^\+91/, "");
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 10) return digits;
+  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
+  return "";
+}
+
+function clearAuthForm() {
+  const email = document.getElementById("auth-email");
+  const password = document.getElementById("auth-password");
+  const name = document.getElementById("auth-name");
+  const mobile = document.getElementById("auth-mobile");
+  if (email) email.value = "";
+  if (password) password.value = "";
+  if (name) name.value = "";
+  if (mobile) mobile.value = "";
+  showAuthError("");
+}
+
+function clearPlanUiSelection() {
+  plans.forEach((btn, index) => {
+    btn.setAttribute("aria-checked", index === 0 ? "true" : "false");
+  });
+  durationTabs.forEach((btn) => {
+    btn.setAttribute(
+      "aria-checked",
+      String(Number(btn.dataset.months) === INITIAL_DURATION.months)
+    );
+  });
+}
+
+function clearActivePlanDisplays() {
+  const ids = [
+    "cred-user",
+    "cred-pass",
+    "cred-mac",
+    "meta-speed",
+    "meta-duration",
+    "meta-paid",
+    "meta-valid",
+    "success-plan-name",
+    "dash-cred-user",
+    "dash-cred-pass",
+    "dash-mac",
+    "dash-plan-name",
+    "dash-speed",
+    "dash-duration",
+    "dash-paid",
+    "dash-status",
+    "dash-device",
+    "dash-binding",
+  ];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "—";
+  });
+
+  const title = document.getElementById("success-title");
+  if (title) title.textContent = "Payment Successful!";
+  const subtitle = document.getElementById("success-subtitle");
+  if (subtitle) {
+    subtitle.innerHTML =
+      'Your <span id="success-plan-name">plan</span> is now active.';
+  }
+  const macNote = document.getElementById("success-mac-note");
+  if (macNote) {
+    macNote.textContent =
+      "Locked to this device. Account sharing is strictly restricted.";
+  }
+  const savings = document.getElementById("success-savings");
+  if (savings) savings.classList.remove("visible");
+
+  btnConnect.textContent = "Connect to Network";
+  btnConnect.disabled = false;
+  if (btnPay) btnPay.disabled = false;
+  btnRestart.textContent = "Log out";
+
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.textContent = "COPY";
+    btn.classList.remove("copied");
+  });
+}
+
+/**
+ * Reset all in-memory app state to the initial logged-out defaults.
+ * Call this on logout AND before binding a new uid after login/signup.
+ */
+function resetClientState({ clearAuthFields = true } = {}) {
+  currentUser = null;
+  userDoc = null;
+  sessionUid = null;
+  authMode = "login";
+  selected = { ...INITIAL_SELECTED };
+  duration = { ...INITIAL_DURATION };
+  clearUploadedDoc();
+  if (clearAuthFields) clearAuthForm();
+  clearPlanUiSelection();
+  clearActivePlanDisplays();
+  updatePricingUI();
+  updateAccountBar();
+}
+
+/**
+ * Wipe previous session completely when auth uid changes or becomes null.
+ */
+function wipePreviousSessionState() {
+  currentUser = null;
+  userDoc = null;
+  sessionUid = null;
+  // Keep pendingContact — signup mobile must survive Auth recreate / uid switch.
+  selected = { ...INITIAL_SELECTED };
+  duration = { ...INITIAL_DURATION };
+  clearUploadedDoc();
+  clearPlanUiSelection();
+  clearActivePlanDisplays();
+  clearCheckoutContactFields();
+  clearRazorpayClientMemory();
+}
+
+/**
+ * Full logout: Firebase signOut + clear storage + reset UI to login.
+ * Next login always loads a fresh users/{uid} document from Firestore.
+ */
+async function performLogout() {
+  try {
+    await logOut(); // Firebase Auth signOut()
+  } catch (error) {
+    console.error("Firebase signOut failed:", error);
+  } finally {
+    pendingContact = { email: "", mobile: "" };
+    clearBrowserStorage();
+    resetClientState({ clearAuthFields: true });
+    clearCheckoutContactFields();
+    setAuthMode("login");
+    showScreen("auth");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+function formatINR(amount) {
+  return "₹" + Number(amount).toLocaleString("en-IN");
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function macFromUid(uid) {
+  const source = String(uid || "device");
+  let hash = 2166136261;
+  for (let i = 0; i < source.length; i++) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const bytes = [];
+  for (let i = 0; i < 6; i++) {
+    bytes.push((hash >>> (i * 5)) & 0xff);
+  }
+  bytes[0] = (bytes[0] & 0xfe) | 0x02;
+  return bytes.map((b) => b.toString(16).padStart(2, "0").toUpperCase()).join(":");
+}
+
+function detectDeviceLabel() {
+  const ua = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "Apple iOS device";
+  if (/Android/i.test(ua)) return "Android device";
+  if (/Windows/i.test(ua)) return "Windows device";
+  if (/Mac OS X|Macintosh/i.test(ua)) return "Mac device";
+  if (/Linux/i.test(ua)) return "Linux device";
+  return "This browser device";
+}
+
+function validUntilDate(months) {
+  const d = new Date();
+  d.setDate(d.getDate() + months * 30);
+  return d;
+}
+
+function formatValidUntil(date) {
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function hasActiveSubscription(doc) {
+  // Real routing: users/{uid}.activePlan must exist and still be valid.
+  if (!doc || !doc.activePlan || typeof doc.activePlan !== "object") return false;
+
+  const plan = doc.activePlan;
+  if (!(plan.id || plan.name || plan.wifiUsername)) return false;
+
+  if (plan.validUntilIso) {
+    const expiry = new Date(plan.validUntilIso);
+    if (!Number.isNaN(expiry.getTime()) && expiry.getTime() < Date.now()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function getConnectionStatus() {
+  if (userDoc && userDoc.connectionStatus) return userDoc.connectionStatus;
+  if (userDoc && userDoc.activePlan && userDoc.activePlan.connectionStatus) {
+    return userDoc.activePlan.connectionStatus;
+  }
+  return "connected";
+}
+
+function showDocError(message) {
+  docError.textContent = message;
+  docError.classList.add("visible");
+}
+
+function clearDocError() {
+  docError.textContent = "";
+  docError.classList.remove("visible");
+}
+
+function isAllowedDoc(file) {
+  const name = (file.name || "").toLowerCase();
+  const extOk = ALLOWED_DOC_EXTS.some((ext) => name.endsWith(ext));
+  const typeOk = !file.type || ALLOWED_DOC_TYPES.includes(file.type);
+  return extOk && typeOk;
+}
+
+function clearUploadedDoc({ resetType = true } = {}) {
+  uploadedDoc = null;
+  docFileInput.value = "";
+  docDrop.classList.remove("has-file");
+  docFileMeta.classList.remove("visible");
+  docFileName.textContent = "—";
+  docFileSize.textContent = "—";
+  docDropTitle.textContent = "Tap to upload government ID";
+  docDropSub.textContent = "Hostel / student ID not accepted";
+  if (resetType) {
+    const docType = document.getElementById("doc-id-type");
+    if (docType) docType.selectedIndex = 0;
+  }
+  clearDocError();
+}
+
+function setUploadedDoc(file) {
+  if (!file) {
+    clearUploadedDoc({ resetType: false });
+    return false;
+  }
+  if (!isAllowedDoc(file)) {
+    clearUploadedDoc({ resetType: false });
+    showDocError("Please upload a PDF, JPG, or PNG of a government ID.");
+    return false;
+  }
+  if (file.size > MAX_DOC_BYTES) {
+    clearUploadedDoc({ resetType: false });
+    showDocError("File is too large. Maximum size is 5 MB.");
+    return false;
+  }
+
+  const lowerName = String(file.name || "").toLowerCase();
+  if (
+    /hostel|student\s*id|college\s*id|school\s*id|campus\s*id/.test(lowerName)
+  ) {
+    clearUploadedDoc({ resetType: false });
+    showDocError(
+      "Hostel ID and student ID are not allowed. Upload a government ID (Aadhaar, PAN, DL, Voter ID, or Passport)."
+    );
+    return false;
+  }
+
+  uploadedDoc = file;
+  clearDocError();
+  docDrop.classList.add("has-file");
+  docFileMeta.classList.add("visible");
+  docFileName.textContent = file.name;
+  docFileSize.textContent = formatFileSize(file.size);
+  docDropTitle.textContent = "Government ID ready";
+  docDropSub.textContent = "You can replace this file anytime";
+  return true;
+}
+
+function requireDocument() {
+  const docType = document.getElementById("doc-id-type");
+  const selectedType = docType ? String(docType.value || "").trim() : "";
+  if (!selectedType) {
+    showDocError("Select a government ID type (Aadhaar, PAN, DL, Voter ID, or Passport).");
+    if (docType) docType.focus();
+    document.getElementById("doc-upload").scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+    return false;
+  }
+
+  if (uploadedDoc) {
+    clearDocError();
+    return true;
+  }
+  showDocError(
+    "Upload a government ID before payment. Hostel ID and student ID are not accepted."
+  );
+  document.getElementById("doc-upload").scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+  return false;
+}
+
+function calcPricing(monthly) {
+  const full = monthly * duration.months;
+  const planTotal = monthly * duration.billable;
+  const savings = full - planTotal;
+
+  // Razorpay domestic fee passed to customer: 2% + 18% GST on that fee.
+  const platformFee = Math.round(planTotal * RAZORPAY_PLATFORM_FEE_RATE);
+  const feeGst = Math.round(platformFee * GST_ON_PLATFORM_FEE_RATE);
+  const platformFeeTotal = platformFee + feeGst;
+  const total = planTotal + platformFeeTotal;
+
+  return {
+    monthly,
+    full,
+    planTotal,
+    savings,
+    platformFee,
+    feeGst,
+    platformFeeTotal,
+    total,
+  };
+}
+
+function getQuote() {
+  return calcPricing(selected.monthly);
+}
+
+function buildPlanPayload(quote = getQuote()) {
+  return {
+    id: selected.id,
+    name: selected.name,
+    speed: selected.speed,
+    monthlyPrice: selected.monthly,
+    durationMonths: duration.months,
+    billableMonths: duration.billable,
+    freeMonths: duration.free,
+    durationLabel: duration.label,
+    planAmount: quote.planTotal,
+    platformFee: quote.platformFee,
+    platformFeeGst: quote.feeGst,
+    platformFeeTotal: quote.platformFeeTotal,
+    amount: quote.total,
+    fullAmount: quote.full,
+    savings: quote.savings,
+  };
+}
+
+function showScreen(name) {
+  Object.values(screens).forEach((el) => {
+    if (el) el.classList.remove("active");
+  });
+  if (screens[name]) screens[name].classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function showAuthError(message) {
+  authError.textContent = message || "";
+  authError.classList.toggle("visible", Boolean(message));
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  authToggleBtns.forEach((btn) => {
+    btn.setAttribute("aria-selected", String(btn.dataset.authMode === mode));
+  });
+  const isSignup = mode === "signup";
+  authNameField.hidden = !isSignup;
+  if (authMobileField) authMobileField.hidden = !isSignup;
+  authTitle.textContent = isSignup ? "Create account" : "Welcome back";
+  authSubtitle.textContent = isSignup
+    ? "Sign up with name, mobile, and email to activate hostel Wi‑Fi."
+    : "Log in to continue to plan selection and payment.";
+  authSubmit.textContent = isSignup ? "Create account" : "Log in";
+  showAuthError("");
+}
+
+function normalizeSignupMobile(raw) {
+  return normalizeIndiaMobile(raw);
+}
+
+function updateAccountBar() {
+  if (!currentUser) {
+    accountBar.hidden = true;
+    accountBar.setAttribute("aria-hidden", "true");
+    return;
+  }
+
+  accountBar.hidden = false;
+  accountBar.setAttribute("aria-hidden", "false");
+  accountEmail.textContent = currentUser.email || currentUser.displayName || "Signed in";
+
+  const active = userDoc && userDoc.activePlan;
+  const status = (userDoc && userDoc.transactionStatus) || "none";
+  const connected = getConnectionStatus() === "connected";
+
+  if (hasActiveSubscription(userDoc)) {
+    accountPlan.textContent =
+      (active.name || "Active plan") +
+      (active.durationLabel ? " · " + active.durationLabel : "") +
+      (connected ? " · Online" : " · Offline");
+    accountStatus.textContent = "Active subscriber";
+  } else if (userDoc && userDoc.selectedPlan && userDoc.selectedPlan.name) {
+    accountPlan.textContent =
+      userDoc.selectedPlan.name + " · " + (status === "pending" ? "Payment pending" : "Selected");
+    accountStatus.textContent = "Logged in";
+  } else {
+    accountPlan.textContent = "No active plan yet";
+    accountStatus.textContent = "Logged in";
+  }
+
+  accountStatus.dataset.status = hasActiveSubscription(userDoc) ? "active" : status;
+}
+
+async function hydrateActivePlanDetails() {
+  if (!currentUser || !userDoc || !userDoc.activePlan) return userDoc;
+
+  const plan = { ...userDoc.activePlan };
+  let changed = false;
+
+  if (!plan.wifiUsername || !plan.wifiPassword) {
+    const creds = randomCreds();
+    plan.wifiUsername = plan.wifiUsername || creds.user;
+    plan.wifiPassword = plan.wifiPassword || creds.pass;
+    changed = true;
+  }
+
+  if (!plan.macAddress) {
+    plan.macAddress = macFromUid(currentUser.uid);
+    changed = true;
+  }
+
+  if (!plan.deviceLabel) {
+    plan.deviceLabel = detectDeviceLabel();
+    changed = true;
+  }
+
+  if (!plan.connectionStatus) {
+    plan.connectionStatus = userDoc.connectionStatus || "connected";
+    changed = true;
+  }
+
+  if (changed) {
+    try {
+      await ensureActivePlanDetails(currentUser.uid, plan);
+      userDoc = {
+        ...userDoc,
+        activePlan: plan,
+        connectionStatus: plan.connectionStatus,
+      };
+    } catch (error) {
+      console.error(error);
+      userDoc = { ...userDoc, activePlan: plan };
+    }
+  }
+
+  return userDoc;
+}
+
+function renderDashboard() {
+  const plan = (userDoc && userDoc.activePlan) || {};
+  const connected = getConnectionStatus() === "connected";
+  const name =
+    currentUser && (currentUser.displayName || currentUser.email)
+      ? currentUser.displayName || currentUser.email
+      : "guest";
+
+  const welcome = document.getElementById("dash-welcome");
+  if (!welcome) return;
+
+  welcome.textContent = "Welcome back, " + name;
+  document.getElementById("dash-plan-name").textContent =
+    plan.name || "Active hostel Wi‑Fi plan";
+  document.getElementById("dash-plan-validity").textContent =
+    "Valid until " + (plan.validUntil || "—");
+  document.getElementById("dash-speed").textContent = plan.speed || "—";
+  document.getElementById("dash-duration").textContent = plan.durationLabel || "—";
+  document.getElementById("dash-paid").textContent =
+    plan.amount != null ? formatINR(plan.amount) : "—";
+  document.getElementById("dash-status").textContent = connected ? "Online" : "Offline";
+  document.getElementById("dash-cred-user").textContent = plan.wifiUsername || "—";
+  document.getElementById("dash-cred-pass").textContent = plan.wifiPassword || "—";
+  document.getElementById("dash-mac").textContent = plan.macAddress || "—";
+  document.getElementById("dash-device").textContent = plan.deviceLabel || detectDeviceLabel();
+  document.getElementById("dash-binding").textContent = connected
+    ? "MAC locked · session live"
+    : "MAC locked · disconnected";
+
+  const pill = document.getElementById("dash-status-pill");
+  const label = document.getElementById("dash-connection-label");
+  if (pill && label && btnDashToggle) {
+    pill.classList.toggle("is-offline", !connected);
+    label.textContent = connected ? "Connected" : "Disconnected";
+    btnDashToggle.textContent = connected ? "Disconnect Wi‑Fi" : "Reconnect Wi‑Fi";
+  }
+}
+
+function renderActivePlanView({ fromPayment = false } = {}) {
+  const plan = (userDoc && userDoc.activePlan) || {};
+  const titleEl = document.getElementById("success-title");
+  const subtitleEl = document.getElementById("success-subtitle");
+  const savingsEl = document.getElementById("success-savings");
+
+  if (fromPayment) {
+    titleEl.textContent = "Payment Successful!";
+    subtitleEl.innerHTML =
+      'Your <span id="success-plan-name"></span> is now active.';
+    document.getElementById("success-plan-name").textContent =
+      (plan.name || selected.name) +
+      " · " +
+      (plan.durationLabel || duration.label);
+  } else {
+    titleEl.textContent = "Active Plan Dashboard";
+    subtitleEl.innerHTML =
+      'Your <span id="success-plan-name"></span> is already active.';
+    document.getElementById("success-plan-name").textContent =
+      plan.name || "hostel Wi‑Fi plan";
+    savingsEl.classList.remove("visible");
+  }
+
+  document.getElementById("cred-user").textContent = plan.wifiUsername || "—";
+  document.getElementById("cred-pass").textContent = plan.wifiPassword || "—";
+  document.getElementById("cred-mac").textContent = plan.macAddress || "—";
+  document.getElementById("meta-speed").textContent = plan.speed || "—";
+  document.getElementById("meta-duration").textContent = plan.durationLabel || "—";
+  document.getElementById("meta-paid").textContent =
+    plan.amount != null ? formatINR(plan.amount) : "—";
+  document.getElementById("meta-valid").textContent = plan.validUntil || "—";
+
+  const device = plan.deviceLabel || detectDeviceLabel();
+  const mac = plan.macAddress || "this device";
+  document.getElementById("success-mac-note").textContent =
+    "Bound to " + mac + " · " + device + ". Account sharing is restricted.";
+
+  document.querySelectorAll("#screen-success .copy-btn").forEach((b) => {
+    b.textContent = "COPY";
+    b.classList.remove("copied");
+  });
+
+  const connected = getConnectionStatus() === "connected";
+  btnConnect.textContent = connected ? "Connected ✓" : "Connect to Network";
+  btnConnect.disabled = connected;
+  btnRestart.textContent = "Log out";
+
+  // Keep the secondary dashboard screen in sync if present.
+  if (document.getElementById("dash-plan-name")) {
+    renderDashboard();
+  }
+}
+
+async function openActivePlanDashboard({ fromPayment = false } = {}) {
+  await hydrateActivePlanDetails();
+  renderActivePlanView({ fromPayment });
+  updateAccountBar();
+  showScreen("success");
+}
+
+/**
+ * After login/signup: load users/{uid} and route by activePlan.
+ * - activePlan present & valid → Active Dashboard
+ * - otherwise → plan selection / payment
+ */
+async function routeAfterAuth() {
+  updateAccountBar();
+
+  if (hasActiveSubscription(userDoc)) {
+    await openActivePlanDashboard({ fromPayment: false });
+    return;
+  }
+
+  syncPlanSelectionFromUserDoc();
+  updatePricingUI();
+  hydrateCheckoutContactFields();
+  showScreen("plans");
+}
+
+function hydrateCheckoutContactFields() {
+  // No checkout contact form — contact is resolved from auth/profile at Pay time.
+}
+
+/**
+ * Auth listener can fire before signup finishes writing users/{uid}.
+ * Retry briefly so mobile/email from signup are available for checkout.
+ */
+async function fetchUserDocumentAfterAuth(uid) {
+  let doc = await getUserDocument(uid);
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const hasMobile = !!(doc && (doc.mobile || doc.phone || doc.contact));
+    if (doc && (hasMobile || !pendingContact.mobile)) {
+      return doc;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    doc = await getUserDocument(uid);
+  }
+  return doc;
+}
+
+/**
+ * Resolve Razorpay prefill from signup/login profile (no duplicate checkout form).
+ */
+function resolveCheckoutContact() {
+  const userEmail =
+    (currentUser && currentUser.email) ||
+    (userDoc && userDoc.email) ||
+    pendingContact.email ||
+    "";
+  const mobileRaw =
+    (userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact)) ||
+    pendingContact.mobile ||
+    "";
+  const userMobile = normalizeIndiaMobile(mobileRaw);
+
+  if (!userEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(userEmail).trim())) {
+    alert("Account email is missing. Please log out and sign up / log in again.");
+    return null;
+  }
+
+  if (!userMobile) {
+    alert(
+      "Account mobile is missing. Please log out and sign up again with a valid 10-digit mobile number."
+    );
+    return null;
+  }
+
+  return { userEmail: String(userEmail).trim(), userMobile };
+}
+
+function syncPlanSelectionFromUserDoc() {
+  if (!userDoc || !userDoc.selectedPlan || !userDoc.selectedPlan.id) return;
+
+  const planBtn = plans.find((btn) => btn.dataset.id === userDoc.selectedPlan.id);
+  if (planBtn) {
+    plans.forEach((p) => p.setAttribute("aria-checked", "false"));
+    planBtn.setAttribute("aria-checked", "true");
+    selected = {
+      id: planBtn.dataset.id,
+      name: planBtn.dataset.name,
+      speed: planBtn.dataset.speed,
+      monthly: Number(planBtn.dataset.price),
+    };
+  }
+
+  const months = Number(userDoc.selectedPlan.durationMonths);
+  if (months) {
+    const durBtn = durationTabs.find((btn) => Number(btn.dataset.months) === months);
+    if (durBtn) {
+      durationTabs.forEach((t) => t.setAttribute("aria-checked", "false"));
+      durBtn.setAttribute("aria-checked", "true");
+      duration = {
+        months: Number(durBtn.dataset.months),
+        billable: Number(durBtn.dataset.billable),
+        free: Number(durBtn.dataset.free),
+        label: durBtn.dataset.label,
+      };
+    }
+  }
+
+  updatePricingUI();
+}
+
+function updatePricingUI() {
+  const quote = getQuote();
+  const durationShort =
+    duration.months === 1 ? "1 month" : duration.months + " months";
+  const detail = selected.name + " · " + duration.label;
+
+  plans.forEach((btn) => {
+    const monthly = Number(btn.dataset.price);
+    const p = calcPricing(monthly);
+    const amountEl = btn.querySelector("[data-total]");
+    const wasEl = btn.querySelector("[data-was]");
+    const periodEl = btn.querySelector("[data-period]");
+    const durLabel = btn.querySelector(".plan-duration-label");
+
+    // Plan cards show billed plan price (not platform fee).
+    // Multi-month without discount (3 Months) still shows 3× monthly total.
+    if (duration.months > 1) {
+      amountEl.textContent = formatINR(p.planTotal);
+      periodEl.textContent = "total · " + duration.label;
+      if (p.savings > 0) {
+        wasEl.textContent = formatINR(p.full);
+        wasEl.classList.add("visible");
+      } else {
+        wasEl.textContent = "";
+        wasEl.classList.remove("visible");
+      }
+    } else {
+      amountEl.textContent = formatINR(p.monthly);
+      wasEl.textContent = "";
+      wasEl.classList.remove("visible");
+      periodEl.textContent = "/month";
+    }
+    if (durLabel) durLabel.textContent = durationShort;
+  });
+
+  document.getElementById("summary-detail").textContent = detail;
+  document.getElementById("summary-plan-amount").textContent = formatINR(quote.planTotal);
+  document.getElementById("summary-platform-fee").textContent = formatINR(
+    quote.platformFee
+  );
+  document.getElementById("summary-fee-gst").textContent = formatINR(quote.feeGst);
+  document.getElementById("summary-total").textContent = formatINR(quote.total);
+  const payTotalEl = document.getElementById("summary-pay-total");
+  if (payTotalEl) payTotalEl.textContent = formatINR(quote.total);
+
+  const wasSummary = document.getElementById("summary-was");
+  const savingsChip = document.getElementById("savings-chip");
+  if (quote.savings > 0) {
+    wasSummary.textContent = formatINR(quote.full);
+    wasSummary.classList.add("visible");
+    document.getElementById("savings-amount").textContent = formatINR(quote.savings);
+    savingsChip.classList.add("visible");
+  } else {
+    wasSummary.classList.remove("visible");
+    savingsChip.classList.remove("visible");
+  }
+
+  btnPay.textContent = "Pay " + formatINR(quote.total);
+}
+
+async function persistSelectedPlan() {
+  if (!currentUser) return;
+  try {
+    const payload = buildPlanPayload();
+    await saveSelectedPlan(currentUser.uid, payload);
+    userDoc = {
+      ...(userDoc || {}),
+      selectedPlan: payload,
+      transactionStatus: "selected",
+    };
+    updateAccountBar();
+  } catch (error) {
+    console.error(error);
+    showDocError(friendlyFirestoreError(error));
+  }
+}
+
+async function selectPlan(btn) {
+  plans.forEach((p) => p.setAttribute("aria-checked", "false"));
+  btn.setAttribute("aria-checked", "true");
+  selected = {
+    id: btn.dataset.id,
+    name: btn.dataset.name,
+    speed: btn.dataset.speed,
+    monthly: Number(btn.dataset.price),
+  };
+  updatePricingUI();
+  await persistSelectedPlan();
+}
+
+async function selectDuration(btn) {
+  durationTabs.forEach((t) => t.setAttribute("aria-checked", "false"));
+  btn.setAttribute("aria-checked", "true");
+  duration = {
+    months: Number(btn.dataset.months),
+    billable: Number(btn.dataset.billable),
+    free: Number(btn.dataset.free),
+    label: btn.dataset.label,
+  };
+  updatePricingUI();
+  await persistSelectedPlan();
+}
+
+function randomCreds() {
+  const n = String(Math.floor(1000 + Math.random() * 9000));
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  let suffix = "";
+  for (let i = 0; i < 4; i++) {
+    suffix += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return {
+    user: "kdhm" + n,
+    pass: "Yoga@" + suffix + n.slice(0, 2),
+  };
+}
+
+function validUntil(months) {
+  return formatValidUntil(validUntilDate(months));
+}
+
+function amountToPaise(amountInr) {
+  return Math.round(Number(amountInr) * 100);
+}
+
+/**
+ * Persist paid plan + open Active Dashboard immediately (no fake delay).
+ */
+async function finalizeSuccessfulPayment({ planPayload, quote, razorpayResponse }) {
+  const creds = randomCreds();
+  const expiry = validUntilDate(duration.months);
+  const valid = formatValidUntil(expiry);
+  const macAddress = currentUser ? macFromUid(currentUser.uid) : macFromUid("guest");
+  const deviceLabel = detectDeviceLabel();
+  const paymentId =
+    (razorpayResponse && razorpayResponse.razorpay_payment_id) ||
+    `TXN${Date.now().toString(36).toUpperCase()}`;
+
+  const activePlan = {
+    ...planPayload,
+    wifiUsername: creds.user,
+    wifiPassword: creds.pass,
+    macAddress,
+    deviceLabel,
+    connectionStatus: "connected",
+    validUntil: valid,
+    validUntilIso: expiry.toISOString(),
+    transactionId: paymentId,
+    razorpayPaymentId: paymentId,
+  };
+
+  const transaction = {
+    planId: planPayload.id,
+    planName: planPayload.name,
+    amount: planPayload.amount,
+    currency: "INR",
+    method: "razorpay",
+    documentName: uploadedDoc ? uploadedDoc.name : null,
+    transactionId: paymentId,
+    razorpayPaymentId: paymentId,
+    razorpayOrderId:
+      (razorpayResponse && razorpayResponse.razorpay_order_id) || null,
+    razorpaySignature:
+      (razorpayResponse && razorpayResponse.razorpay_signature) || null,
+    mode: RAZORPAY_CONFIG.testMode ? "test" : "live",
+  };
+
+  if (currentUser) {
+    try {
+      await activatePlan(currentUser.uid, {
+        plan: activePlan,
+        transaction,
+      });
+      userDoc = await getUserDocument(currentUser.uid);
+    } catch (error) {
+      console.error(error);
+      userDoc = {
+        ...(userDoc || {}),
+        uid: currentUser.uid,
+        transactionStatus: "active",
+        connectionStatus: "connected",
+        activePlan,
+        lastTransaction: { ...transaction, status: "paid" },
+      };
+    }
+  } else {
+    userDoc = {
+      transactionStatus: "active",
+      connectionStatus: "connected",
+      activePlan,
+      lastTransaction: { ...transaction, status: "paid" },
+    };
+  }
+
+  const savingsEl = document.getElementById("success-savings");
+  if (quote.savings > 0) {
+    document.getElementById("success-savings-amount").textContent =
+      formatINR(quote.savings) +
+      " (" +
+      duration.free +
+      (duration.free === 1 ? " month" : " months") +
+      " free)";
+    savingsEl.classList.add("visible");
+  } else {
+    savingsEl.classList.remove("visible");
+  }
+
+  renderActivePlanView({ fromPayment: true });
+  updateAccountBar();
+  showScreen("success");
+  if (btnPay) btnPay.disabled = false;
+}
+
+/**
+ * Open Razorpay Standard Checkout:
+ * 1) POST /api/create-order
+ * 2) open modal with order_id
+ * 3) POST /api/verify-payment (HMAC) then activate plan
+ */
+async function startRazorpayCheckout() {
+  if (!currentUser) {
+    showScreen("auth");
+    showAuthError("Please log in before payment.");
+    return;
+  }
+
+  if (typeof window.Razorpay !== "function") {
+    alert("Razorpay checkout failed to load. Please refresh and try again.");
+    return;
+  }
+
+  // Prefill from signup/login profile — checkout contact form removed.
+  const contact = resolveCheckoutContact();
+  if (!contact) return;
+  const { userEmail, userMobile } = contact;
+
+  // Keep profile mobile in sync for future visits.
+  try {
+    await saveUserMobile(currentUser.uid, userMobile);
+    if (userDoc) userDoc = { ...userDoc, mobile: userMobile };
+  } catch (error) {
+    console.warn("Could not save checkout mobile to profile:", error);
+  }
+
+  const quote = getQuote();
+  const planPayload = buildPlanPayload(quote);
+  const amountPaise = amountToPaise(quote.total);
+
+  if (!amountPaise || amountPaise < 100) {
+    alert("Invalid payment amount.");
+    return;
+  }
+
+  btnPay.disabled = true;
+
+  try {
+    await markTransactionPending(currentUser.uid, {
+      planId: planPayload.id,
+      planName: planPayload.name,
+      amount: planPayload.amount,
+      planAmount: planPayload.planAmount,
+      platformFee: planPayload.platformFee,
+      platformFeeGst: planPayload.platformFeeGst,
+      platformFeeTotal: planPayload.platformFeeTotal,
+      currency: "INR",
+      method: "razorpay",
+      documentName: uploadedDoc ? uploadedDoc.name : null,
+      documentType:
+        (document.getElementById("doc-id-type") || {}).value || null,
+      mode: "test",
+    });
+    userDoc = {
+      ...(userDoc || {}),
+      transactionStatus: "pending",
+    };
+    updateAccountBar();
+  } catch (error) {
+    console.error(error);
+  }
+
+  async function recordPaymentFailure(reason) {
+    if (!currentUser) return;
+    try {
+      await markTransactionFailed(currentUser.uid, {
+        planId: planPayload.id,
+        planName: planPayload.name,
+        amount: planPayload.amount,
+        currency: "INR",
+        method: "razorpay",
+        mode: "test",
+        failureReason: reason,
+      });
+      userDoc = {
+        ...(userDoc || {}),
+        transactionStatus: "failed",
+      };
+      updateAccountBar();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  let checkout;
+  try {
+    checkout = await createOrderOrFallback({
+      amountPaise,
+      receipt: `wifi_${currentUser.uid.slice(0, 8)}_${Date.now()}`
+        .replace(/[^a-zA-Z0-9_]/g, "")
+        .slice(0, 40),
+      notes: {
+        planId: planPayload.id,
+        planName: planPayload.name,
+        uid: currentUser.uid,
+        durationLabel: planPayload.durationLabel,
+        portal: "kaivalyadhama-hostel-wifi",
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    btnPay.disabled = false;
+    void recordPaymentFailure(error.message || "create-order failed");
+    alert(error.message || "Could not create payment order. Is the API running?");
+    return;
+  }
+
+  const order = checkout.order;
+  const requireVerify = checkout.mode === "standard";
+  const checkoutKey = order.key_id || RAZORPAY_KEY_ID;
+
+  if (!checkoutKey || !String(checkoutKey).startsWith("rzp_")) {
+    btnPay.disabled = false;
+    alert("Razorpay Key ID is missing. Run npm run sync:razorpay-env and redeploy.");
+    return;
+  }
+
+  // Build Razorpay prefill from account profile contact.
+  const prefill = buildDomesticPrefill({
+    name: (currentUser && currentUser.displayName) || (userDoc && userDoc.displayName) || "",
+    email: userEmail,
+    contact: userMobile,
+  });
+
+  if (!prefill.contact || !prefill.email) {
+    btnPay.disabled = false;
+    alert(
+      "Account email or mobile is missing. Please log out and sign up / log in again."
+    );
+    return;
+  }
+
+  console.info(
+    "[Razorpay] opening checkout with",
+    RAZORPAY_KEY_FINGERPRINT || checkoutKey.slice(0, 12) + "…",
+    "mode=" + checkout.mode,
+    "prefill.contact=" + prefill.contact,
+    "prefill.email=" + prefill.email
+  );
+
+  // Wipe remembered Razorpay contact from earlier accounts in this browser.
+  // Chrome keeps a stronger session than Firefox — reload SDK before open.
+  try {
+    await reloadRazorpaySdk();
+  } catch (error) {
+    console.warn("Razorpay SDK reload failed, continuing with existing SDK:", error);
+    clearRazorpayClientMemory();
+    if (typeof window.Razorpay !== "function") {
+      btnPay.disabled = false;
+      alert("Razorpay checkout failed to load. Please refresh and try again.");
+      return;
+    }
+  }
+
+  const options = {
+    key: checkoutKey,
+    amount: order.amount,
+    currency: "INR",
+    name: RAZORPAY_CONFIG.name,
+    description: planPayload.name + " · " + planPayload.durationLabel,
+    image: new URL("assets/pcn-logo.png", window.location.href).href,
+    // Flat + nested prefill — some Checkout builds only honor one shape.
+    "prefill.name": prefill.name || "",
+    "prefill.email": prefill.email,
+    "prefill.contact": prefill.contact,
+    prefill: {
+      name: prefill.name || "",
+      email: prefill.email,
+      contact: prefill.contact,
+    },
+    // Force THIS account's mobile/email over Razorpay site-remembered customer.
+    readonly: {
+      email: true,
+      contact: true,
+      name: true,
+    },
+    remember_customer: false,
+    personalization: false,
+    notes: {
+      planId: planPayload.id,
+      planName: planPayload.name,
+      uid: currentUser.uid,
+      durationLabel: planPayload.durationLabel,
+      portal: "pcn-hostel-wifi",
+      mode: checkout.mode === "standard" ? "test-standard" : "test-fallback",
+      market: "IN",
+      customerMobile: prefill.contact,
+      customerEmail: prefill.email,
+      sessionStamp: String(Date.now()),
+    },
+    theme: {
+      color: RAZORPAY_CONFIG.themeColor || "#1f6feb",
+    },
+    config: getDomesticCheckoutConfig(),
+    modal: {
+      ondismiss() {
+        void recordPaymentFailure("cancelled");
+        btnPay.disabled = false;
+        clearRazorpayClientMemory();
+      },
+    },
+    handler(response) {
+      (async () => {
+        try {
+          await verifyPaymentOrSkip(response, { requireVerify });
+          await finalizeSuccessfulPayment({
+            planPayload,
+            quote,
+            razorpayResponse: response,
+          });
+        } catch (error) {
+          console.error(error);
+          void recordPaymentFailure(error.message || "verify failed");
+          alert(error.message || "Payment verification failed.");
+          btnPay.disabled = false;
+        } finally {
+          clearRazorpayClientMemory();
+        }
+      })();
+    },
+  };
+
+  if (order.order_id) {
+    options.order_id = order.order_id;
+  }
+
+  try {
+    const rzp = new window.Razorpay(options);
+    rzp.on("payment.failed", (response) => {
+      console.error("Razorpay payment failed:", response);
+      const desc =
+        (response &&
+          response.error &&
+          (response.error.description || response.error.reason)) ||
+        "Payment failed. Please try again.";
+      void recordPaymentFailure(desc);
+      alert(desc);
+      btnPay.disabled = false;
+      clearRazorpayClientMemory();
+    });
+    rzp.open();
+  } catch (error) {
+    console.error(error);
+    alert("Could not open Razorpay checkout. Please try again.");
+    btnPay.disabled = false;
+  }
+}
+
+plans.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    selectPlan(btn);
+  });
+  btn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      selectPlan(btn);
+    }
+  });
+});
+
+durationTabs.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    selectDuration(btn);
+  });
+  btn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      selectDuration(btn);
+    }
+  });
+});
+
+btnPay.addEventListener("click", async () => {
+  if (!currentUser) {
+    showScreen("auth");
+    showAuthError("Please log in or create an account before payment.");
+    return;
+  }
+  if (!requireDocument()) return;
+  if (!resolveCheckoutContact()) return;
+  await persistSelectedPlan();
+  updatePricingUI();
+  // Open official Razorpay Checkout modal directly (no in-app checkout page).
+  await startRazorpayCheckout();
+});
+
+btnRestart.addEventListener("click", () => {
+  performLogout();
+});
+
+btnConnect.addEventListener("click", async () => {
+  btnConnect.textContent = "Connected ✓";
+  btnConnect.disabled = true;
+
+  if (currentUser && hasActiveSubscription(userDoc)) {
+    try {
+      const plan = {
+        ...(userDoc.activePlan || {}),
+        connectionStatus: "connected",
+      };
+      await setConnectionStatus(currentUser.uid, {
+        connectionStatus: "connected",
+        activePlanPatch: plan,
+      });
+      userDoc = {
+        ...userDoc,
+        connectionStatus: "connected",
+        activePlan: plan,
+      };
+      renderActivePlanView({ fromPayment: false });
+      updateAccountBar();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+});
+
+btnDashToggle.addEventListener("click", async () => {
+  if (!currentUser || !hasActiveSubscription(userDoc)) return;
+
+  const nextStatus = getConnectionStatus() === "connected" ? "disconnected" : "connected";
+  btnDashToggle.disabled = true;
+
+  try {
+    const plan = {
+      ...(userDoc.activePlan || {}),
+      connectionStatus: nextStatus,
+    };
+    await setConnectionStatus(currentUser.uid, {
+      connectionStatus: nextStatus,
+      activePlanPatch: plan,
+    });
+    userDoc = {
+      ...userDoc,
+      connectionStatus: nextStatus,
+      activePlan: plan,
+    };
+    renderDashboard();
+    renderActivePlanView({ fromPayment: false });
+    updateAccountBar();
+  } catch (error) {
+    console.error(error);
+    alert(friendlyFirestoreError(error));
+  } finally {
+    btnDashToggle.disabled = false;
+  }
+});
+
+btnDashLogout.addEventListener("click", () => {
+  performLogout();
+});
+
+docFileInput.addEventListener("change", () => {
+  const file = docFileInput.files && docFileInput.files[0];
+  setUploadedDoc(file || null);
+});
+
+docRemove.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  clearUploadedDoc();
+});
+
+["dragenter", "dragover"].forEach((evt) => {
+  docDrop.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    docDrop.classList.add("is-dragover");
+  });
+});
+
+["dragleave", "drop"].forEach((evt) => {
+  docDrop.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    docDrop.classList.remove("is-dragover");
+  });
+});
+
+docDrop.addEventListener("drop", (e) => {
+  const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!file) return;
+  setUploadedDoc(file);
+});
+
+document.querySelectorAll(".copy-btn").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const id = btn.getAttribute("data-copy");
+    const text = document.getElementById(id).textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    btn.textContent = "Copied! ✓";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = "COPY";
+      btn.classList.remove("copied");
+    }, 2000);
+  });
+});
+
+authToggleBtns.forEach((btn) => {
+  btn.addEventListener("click", () => setAuthMode(btn.dataset.authMode));
+});
+
+// Support number: avoid href="tel:..." so Chrome autofill does not latch onto helpline.
+document.querySelectorAll("a.helpline[data-tel]").forEach((anchor) => {
+  anchor.addEventListener("click", (event) => {
+    event.preventDefault();
+    const tel = anchor.getAttribute("data-tel");
+    if (tel) window.location.href = "tel:" + tel;
+  });
+});
+
+authForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  showAuthError("");
+
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+  const displayName = document.getElementById("auth-name").value.trim();
+  const mobileRaw = (document.getElementById("auth-mobile") || {}).value || "";
+  const mobile = normalizeSignupMobile(mobileRaw);
+
+  if (!email || !password) {
+    showAuthError("Email and password are required.");
+    return;
+  }
+
+  if (authMode === "signup" && !mobile) {
+    showAuthError("Enter a valid 10-digit Indian mobile number.");
+    return;
+  }
+
+  // Remember contact before Auth recreate wipes form fields / session.
+  pendingContact = {
+    email,
+    mobile: mobile || "",
+  };
+
+  // Drop any previous in-memory session before creating/signing into an account.
+  wipePreviousSessionState();
+  // wipe clears checkout fields — restore pending after wipe.
+  pendingContact = {
+    email,
+    mobile: mobile || "",
+  };
+  updateAccountBar();
+
+  authSubmit.disabled = true;
+  authSubmit.textContent = authMode === "signup" ? "Creating…" : "Signing in…";
+
+  try {
+    if (authMode === "signup") {
+      await signUp({ email, password, displayName, mobile });
+    } else {
+      await signIn({ email, password });
+    }
+    // onAuthStateChanged will bind the new uid and fetch Firestore fresh.
+  } catch (error) {
+    console.error(error);
+    wipePreviousSessionState();
+    updateAccountBar();
+    showAuthError(friendlyAuthError(error));
+  } finally {
+    authSubmit.disabled = false;
+    authSubmit.textContent = authMode === "signup" ? "Create account" : "Log in";
+  }
+});
+
+btnLogout.addEventListener("click", () => {
+  performLogout();
+});
+
+watchAuthState(async (user) => {
+  // Always discard previous session variables on any auth transition.
+  const nextUid = user && user.uid ? user.uid : null;
+  const uidChanged = nextUid !== sessionUid;
+
+  if (!user) {
+    wipePreviousSessionState();
+    clearAuthForm();
+    updatePricingUI();
+    updateAccountBar();
+    setAuthMode("login");
+    showScreen("auth");
+    return;
+  }
+
+  if (uidChanged) {
+    wipePreviousSessionState();
+  }
+
+  // Bind ONLY the authenticated uid, then force a server fetch.
+  currentUser = user;
+  sessionUid = user.uid;
+  userDoc = null;
+
+  try {
+    userDoc = await fetchUserDocumentAfterAuth(user.uid);
+    // Guard: never keep a doc that doesn't belong to this uid.
+    if (userDoc && userDoc.uid && userDoc.uid !== user.uid) {
+      console.warn("Discarding mismatched user document for uid", user.uid);
+      userDoc = null;
+    }
+    if (userDoc && userDoc.id && userDoc.id !== user.uid) {
+      console.warn("Discarding user document with mismatched id", user.uid);
+      userDoc = null;
+    }
+
+    // If signup mobile hasn't landed in Firestore yet, persist it now.
+    const profileMobile = userDoc && (userDoc.mobile || userDoc.phone || userDoc.contact);
+    if (!profileMobile && pendingContact.mobile) {
+      try {
+        await saveUserMobile(user.uid, pendingContact.mobile);
+        userDoc = {
+          ...(userDoc || { uid: user.uid, email: user.email || pendingContact.email || null }),
+          mobile: pendingContact.mobile,
+        };
+      } catch (saveError) {
+        console.warn("Could not persist signup mobile:", saveError);
+      }
+    }
+  } catch (error) {
+    console.error(error);
+    userDoc = null;
+  }
+
+  await routeAfterAuth();
+});
+
+setAuthMode("login");
+updatePricingUI();
