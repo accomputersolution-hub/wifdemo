@@ -8,7 +8,7 @@ import {
   signIn,
   logOut,
   friendlyAuthError,
-} from "./auth-service.js?v=4.5";
+} from "./auth-service.js?v=5.0";
 import {
   getUserDocument,
   saveUserMobile,
@@ -19,7 +19,7 @@ import {
   setConnectionStatus,
   ensureActivePlanDetails,
   friendlyFirestoreError,
-} from "./user-service.js?v=4.5";
+} from "./user-service.js?v=5.0";
 import {
   RAZORPAY_CONFIG,
   RAZORPAY_KEY_ID,
@@ -29,7 +29,7 @@ import {
   getDomesticCheckoutConfig,
   buildDomesticPrefill,
   normalizeIndiaMobile,
-} from "./razorpay-config.js?v=4.5";
+} from "./razorpay-config.js?v=5.0";
 
 const plans = Array.from(document.querySelectorAll(".plan"));
 const durationTabs = Array.from(document.querySelectorAll(".duration-tab"));
@@ -942,12 +942,18 @@ function updatePricingUI() {
     const periodEl = btn.querySelector("[data-period]");
     const durLabel = btn.querySelector(".plan-duration-label");
 
-    // Plan cards show plan price only; platform fee is shown in checkout summary.
-    if (p.savings > 0) {
+    // Plan cards show billed plan price (not platform fee).
+    // Multi-month without discount (3 Months) still shows 3× monthly total.
+    if (duration.months > 1) {
       amountEl.textContent = formatINR(p.planTotal);
-      wasEl.textContent = formatINR(p.full);
-      wasEl.classList.add("visible");
       periodEl.textContent = "total · " + duration.label;
+      if (p.savings > 0) {
+        wasEl.textContent = formatINR(p.full);
+        wasEl.classList.add("visible");
+      } else {
+        wasEl.textContent = "";
+        wasEl.classList.remove("visible");
+      }
     } else {
       amountEl.textContent = formatINR(p.monthly);
       wasEl.textContent = "";
